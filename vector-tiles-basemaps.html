@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Map with Multiple Backgrounds</title>
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <!-- Externe Basemap-Konfiguration -->
+    <script src="../js/vector-tiles-basemaps.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden; /* Verhindert jeglichen Scrollbalken */
+        }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+
+        .map-selector {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 999;
+        }
+
+        .map-selector img {
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            opacity: 0.6;
+            transition: border 0.3s, opacity 0.3s;
+        }
+
+        .map-selector img.active,
+        .map-selector img:hover {
+            opacity: 1;
+            border-color: #333;
+        }
+
+        .map-selector-options {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .map-selector.show-options .map-selector-options {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="map-selector" id="mapSelector">
+        <img id="currentMap" src="../basemap_preview/VersaTiles_Colorful.png" alt="Current Map" onclick="toggleMaps()">
+        <div class="map-selector-options" id="otherMaps">
+            <img src="../basemap_preview/VersaTiles_Colorful.png" alt="Map 1" onclick="setBasemap('VersaTiles_Colorful')">
+            <img src="../basemap_preview/VersaTiles_Graybeard.png" alt="Map 2" onclick="setBasemap('VersaTiles_Graybeard')">
+            <img src="../basemap_preview/Swisstopo_Basemap.png" alt="Map 3" onclick="setBasemap('Swisstopo_Basemap')">
+            <img src="../basemap_preview/Basemap_World.png" alt="Map 4" onclick="setBasemap('Basemap_DE_Colored')">
+            <img src="../basemap_preview/Basemap_World.png" alt="Map 4" onclick="setBasemap('Basemap_World')">
+        </div>
+    </div>
+
+    <script>
+        // Initialize the MapLibre map
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://tiles.versatiles.org/assets/styles/colorful.json',
+            center: [9.061, 47.5835],
+            zoom: 16
+        });
+
+        // Globale Variable für die aktuelle Attribution-Control
+        let currentAttributionControl = null;
+
+        // Change the basemap
+        function setBasemap(basemapId) {
+            let selectedBasemap;
+
+            // Suche das Basemap-Objekt basierend auf dem basemapId
+            switch (basemapId) {
+                case 'VersaTiles_Colorful':
+                    selectedBasemap = VersaTiles_Colorful;
+                    break;
+                case 'VersaTiles_Graybeard':
+                    selectedBasemap = VersaTiles_Graybeard;
+                    break;
+                case 'Swisstopo_Basemap':
+                    selectedBasemap = Swisstopo_Basemap;
+                    break;
+                case 'Basemap_DE_Colored':
+                    selectedBasemap = Basemap_DE_Colored;
+                    break;
+                case 'Basemap_World':
+                    selectedBasemap = Basemap_World;
+                    break;
+                default:
+                    selectedBasemap = VersaTiles_Colorful; // Default-Wert
+            }
+
+            // Ändere den Kartenausdruck (Style)
+            map.setStyle(selectedBasemap.styleUrl);
+
+            // Entferne die aktuelle Attribution-Control, falls vorhanden
+            if (currentAttributionControl) {
+                map.removeControl(currentAttributionControl);
+                currentAttributionControl = null; // Setze die Variable zurück
+            }
+
+            // Kein Attribution-Control hinzufügen, wenn du es entfernen möchtest
+
+            // Update the active map icon
+            document.getElementById('currentMap').src = document.querySelector(`[onclick="setBasemap('${basemapId}')"]`).src;
+
+            // Hide other maps
+            toggleMaps();
+        }
+
+        // Toggle visibility of other basemap options
+        function toggleMaps() {
+            document.getElementById('mapSelector').classList.toggle('show-options');
+        }
+    </script>
+</body>
+</html>
