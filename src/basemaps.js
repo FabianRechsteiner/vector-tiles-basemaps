@@ -1,7 +1,18 @@
 const VERIFIED_AT = "2026-04-21";
 
+const WINTERTHUR_PREVIEW_VIEW = Object.freeze({
+  center: [8.7147, 47.4951],
+  zoom: 12,
+  bearing: 0,
+  pitch: 0,
+});
+
 function assetUrl(relativePath) {
   return new URL(relativePath, import.meta.url).href;
+}
+
+function generatedPreviewUrl(id) {
+  return assetUrl(`../preview-generator/generated/${id}.png`);
 }
 
 const registry = Object.freeze([
@@ -15,8 +26,9 @@ const registry = Object.freeze([
     variant: "light",
     coverage: "country",
     countries: ["CH", "LI"],
+    bounds: [5.95, 45.73, 10.65, 47.95],
+    defaultView: WINTERTHUR_PREVIEW_VIEW,
     status: "stable",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -26,11 +38,10 @@ const registry = Object.freeze([
     styleUrl: "https://tiles.openfreemap.org/styles/liberty",
     providerUrl: "https://openfreemap.org/",
     usagePolicyUrl: "https://openfreemap.org/tos/",
-    attributionHtml: "OpenFreeMap © OpenMapTiles Data from OpenStreetMap",
+    attributionHtml: "OpenFreeMap &copy; OpenMapTiles Data from OpenStreetMap",
     variant: "light",
     coverage: "world",
     status: "stable",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -40,11 +51,10 @@ const registry = Object.freeze([
     styleUrl: "https://tiles.openfreemap.org/styles/bright",
     providerUrl: "https://openfreemap.org/",
     usagePolicyUrl: "https://openfreemap.org/tos/",
-    attributionHtml: "OpenFreeMap © OpenMapTiles Data from OpenStreetMap",
+    attributionHtml: "OpenFreeMap &copy; OpenMapTiles Data from OpenStreetMap",
     variant: "colorful",
     coverage: "world",
     status: "stable",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -54,11 +64,36 @@ const registry = Object.freeze([
     styleUrl: "https://tiles.openfreemap.org/styles/positron",
     providerUrl: "https://openfreemap.org/",
     usagePolicyUrl: "https://openfreemap.org/tos/",
-    attributionHtml: "OpenFreeMap © OpenMapTiles Data from OpenStreetMap",
+    attributionHtml: "OpenFreeMap &copy; OpenMapTiles Data from OpenStreetMap",
     variant: "gray",
     coverage: "world",
     status: "stable",
-    sourceMode: "remote",
+    lastVerifiedAt: VERIFIED_AT,
+  },
+  {
+    id: "openfreemap.dark",
+    name: "OpenFreeMap Dark",
+    provider: "openfreemap",
+    styleUrl: "https://tiles.openfreemap.org/styles/dark",
+    providerUrl: "https://github.com/hyperknot/openfreemap-styles",
+    usagePolicyUrl: "https://openfreemap.org/tos/",
+    attributionHtml: "OpenFreeMap &copy; OpenMapTiles Data from OpenStreetMap",
+    variant: "dark",
+    coverage: "world",
+    status: "experimental",
+    lastVerifiedAt: VERIFIED_AT,
+  },
+  {
+    id: "openfreemap.fiord",
+    name: "OpenFreeMap Fiord",
+    provider: "openfreemap",
+    styleUrl: "https://tiles.openfreemap.org/styles/fiord",
+    providerUrl: "https://github.com/hyperknot/openfreemap-styles",
+    usagePolicyUrl: "https://openfreemap.org/tos/",
+    attributionHtml: "OpenFreeMap &copy; OpenMapTiles Data from OpenStreetMap",
+    variant: "dark",
+    coverage: "world",
+    status: "experimental",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -72,7 +107,6 @@ const registry = Object.freeze([
     coverage: "world",
     previewUrl: assetUrl("../basemap_preview/VersaTiles_Colorful.png"),
     status: "stable",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -85,7 +119,6 @@ const registry = Object.freeze([
     variant: "dark",
     coverage: "world",
     status: "stable",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -99,7 +132,6 @@ const registry = Object.freeze([
     coverage: "world",
     previewUrl: assetUrl("../basemap_preview/VersaTiles_Graybeard.png"),
     status: "stable",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -112,7 +144,6 @@ const registry = Object.freeze([
     variant: "light",
     coverage: "world",
     status: "stable",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -125,49 +156,6 @@ const registry = Object.freeze([
     variant: "dark",
     coverage: "world",
     status: "stable",
-    sourceMode: "remote",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "basemapde.color",
-    name: "basemap.de Farbe",
-    provider: "basemapde",
-    styleUrl: "https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json",
-    providerUrl: "https://gdz.bkg.bund.de/index.php/default/open-data/gdz-basemapde-vektor-gdz-basemapde-vektor.html",
-    usagePolicyUrl: "https://gdz.bkg.bund.de/index.php/default/open-data/gdz-basemapde-vektor-gdz-basemapde-vektor.html",
-    variant: "colorful",
-    coverage: "country",
-    countries: ["DE"],
-    status: "stable",
-    sourceMode: "remote",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "basemapde.relief",
-    name: "basemap.de Relief",
-    provider: "basemapde",
-    styleUrl: "https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_top.json",
-    providerUrl: "https://gdz.bkg.bund.de/index.php/default/open-data/gdz-basemapde-vektor-gdz-basemapde-vektor.html",
-    usagePolicyUrl: "https://gdz.bkg.bund.de/index.php/default/open-data/gdz-basemapde-vektor-gdz-basemapde-vektor.html",
-    variant: "relief",
-    coverage: "country",
-    countries: ["DE"],
-    status: "stable",
-    sourceMode: "remote",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "basemapde.gray",
-    name: "basemap.de Grau",
-    provider: "basemapde",
-    styleUrl: "https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_gry.json",
-    providerUrl: "https://gdz.bkg.bund.de/index.php/default/open-data/gdz-basemapde-vektor-gdz-basemapde-vektor.html",
-    usagePolicyUrl: "https://gdz.bkg.bund.de/index.php/default/open-data/gdz-basemapde-vektor-gdz-basemapde-vektor.html",
-    variant: "gray",
-    coverage: "country",
-    countries: ["DE"],
-    status: "stable",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -179,9 +167,9 @@ const registry = Object.freeze([
     usagePolicyUrl: "https://gdz.bkg.bund.de/index.php/default/gdz-basemapworld-vektor-gdz-basemapworld-vektor-html.html",
     variant: "colorful",
     coverage: "world",
+    defaultView: WINTERTHUR_PREVIEW_VIEW,
     previewUrl: assetUrl("../basemap_preview/Basemap_World.png"),
     status: "stable",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -194,9 +182,10 @@ const registry = Object.freeze([
     variant: "colorful",
     coverage: "country",
     countries: ["CH", "LI"],
+    bounds: [5.95, 45.73, 10.65, 47.95],
+    defaultView: WINTERTHUR_PREVIEW_VIEW,
     previewUrl: assetUrl("../basemap_preview/Swisstopo_Basemap.png"),
     status: "restricted",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -209,8 +198,9 @@ const registry = Object.freeze([
     variant: "light",
     coverage: "country",
     countries: ["CH", "LI"],
+    bounds: [5.95, 45.73, 10.65, 47.95],
+    defaultView: WINTERTHUR_PREVIEW_VIEW,
     status: "restricted",
-    sourceMode: "remote",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -223,134 +213,9 @@ const registry = Object.freeze([
     variant: "imagery",
     coverage: "country",
     countries: ["CH", "LI"],
+    bounds: [5.95, 45.73, 10.65, 47.95],
+    defaultView: WINTERTHUR_PREVIEW_VIEW,
     status: "restricted",
-    sourceMode: "remote",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "openmaptiles.osm-bright",
-    name: "OpenMapTiles OSM Bright",
-    provider: "openmaptiles",
-    styleUrl: "https://openmaptiles.github.io/osm-bright-gl-style/style-cdn.json",
-    providerUrl: "https://openmaptiles.org/styles/",
-    usagePolicyUrl: "https://openmaptiles.org/docs/website/maplibre-gl-js/",
-    attributionHtml: "© OpenMapTiles © OpenStreetMap contributors",
-    variant: "colorful",
-    coverage: "world",
-    status: "experimental",
-    sourceMode: "remote",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "openmaptiles.positron",
-    name: "OpenMapTiles Positron",
-    provider: "openmaptiles",
-    styleUrl: "https://openmaptiles.github.io/positron-gl-style/style-cdn.json",
-    providerUrl: "https://openmaptiles.org/styles/",
-    usagePolicyUrl: "https://openmaptiles.org/docs/website/maplibre-gl-js/",
-    attributionHtml: "© OpenMapTiles © OpenStreetMap contributors",
-    variant: "light",
-    coverage: "world",
-    status: "experimental",
-    sourceMode: "remote",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "openmaptiles.dark-matter",
-    name: "OpenMapTiles Dark Matter",
-    provider: "openmaptiles",
-    styleUrl: "https://openmaptiles.github.io/dark-matter-gl-style/style-cdn.json",
-    providerUrl: "https://openmaptiles.org/styles/",
-    usagePolicyUrl: "https://openmaptiles.org/docs/website/maplibre-gl-js/",
-    attributionHtml: "© OpenMapTiles © OpenStreetMap contributors",
-    variant: "dark",
-    coverage: "world",
-    status: "experimental",
-    sourceMode: "remote",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "openmaptiles.basic",
-    name: "OpenMapTiles Basic",
-    provider: "openmaptiles",
-    styleUrl: "https://openmaptiles.github.io/maptiler-basic-gl-style/style-cdn.json",
-    providerUrl: "https://openmaptiles.org/styles/",
-    usagePolicyUrl: "https://openmaptiles.org/docs/website/maplibre-gl-js/",
-    attributionHtml: "© OpenMapTiles © OpenStreetMap contributors",
-    variant: "colorful",
-    coverage: "world",
-    status: "experimental",
-    sourceMode: "remote",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "protomaps.light.de",
-    name: "Protomaps Light (DE)",
-    provider: "protomaps",
-    localStylePath: assetUrl("../styles/protomaps_light_de.json"),
-    providerUrl: "https://github.com/protomaps/basemaps",
-    usagePolicyUrl: "https://docs.protomaps.com/basemaps/downloads",
-    attributionHtml: "© Protomaps © OpenStreetMap",
-    variant: "light",
-    coverage: "world",
-    status: "experimental",
-    sourceMode: "local-fallback",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "protomaps.light.en",
-    name: "Protomaps Light (EN)",
-    provider: "protomaps",
-    localStylePath: assetUrl("../styles/protomaps_light_en.json"),
-    providerUrl: "https://github.com/protomaps/basemaps",
-    usagePolicyUrl: "https://docs.protomaps.com/basemaps/downloads",
-    attributionHtml: "© Protomaps © OpenStreetMap",
-    variant: "light",
-    coverage: "world",
-    status: "experimental",
-    sourceMode: "local-fallback",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "protomaps.dark.de",
-    name: "Protomaps Dark (DE)",
-    provider: "protomaps",
-    localStylePath: assetUrl("../styles/protomaps_dark_de.json"),
-    providerUrl: "https://github.com/protomaps/basemaps",
-    usagePolicyUrl: "https://docs.protomaps.com/basemaps/downloads",
-    attributionHtml: "© Protomaps © OpenStreetMap",
-    variant: "dark",
-    coverage: "world",
-    status: "experimental",
-    sourceMode: "local-fallback",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "protomaps.dark.en",
-    name: "Protomaps Dark (EN)",
-    provider: "protomaps",
-    localStylePath: assetUrl("../styles/protomaps_dark_en.json"),
-    providerUrl: "https://github.com/protomaps/basemaps",
-    usagePolicyUrl: "https://docs.protomaps.com/basemaps/downloads",
-    attributionHtml: "© Protomaps © OpenStreetMap",
-    variant: "dark",
-    coverage: "world",
-    status: "experimental",
-    sourceMode: "local-fallback",
-    lastVerifiedAt: VERIFIED_AT,
-  },
-  {
-    id: "protomaps.data-viz-white.de",
-    name: "Protomaps Data Viz White (DE)",
-    provider: "protomaps",
-    localStylePath: assetUrl("../styles/protomaps_data_viz_white_de.json"),
-    providerUrl: "https://github.com/protomaps/basemaps",
-    usagePolicyUrl: "https://docs.protomaps.com/basemaps/downloads",
-    attributionHtml: "© Protomaps © OpenStreetMap",
-    variant: "white",
-    coverage: "world",
-    status: "experimental",
-    sourceMode: "local-fallback",
     lastVerifiedAt: VERIFIED_AT,
   },
 ]);
@@ -429,6 +294,38 @@ export function listBasemaps(filters = {}) {
 export function getBasemap(id) {
   const definition = registry.find((item) => item.id === id);
   return definition ? { ...definition } : null;
+}
+
+export function getBasemapPreviewCandidates(idOrDefinition) {
+  const definition = typeof idOrDefinition === "string"
+    ? getBasemap(idOrDefinition)
+    : idOrDefinition;
+
+  if (!definition) {
+    return [];
+  }
+
+  const candidates = [
+    generatedPreviewUrl(definition.id),
+    definition.previewUrl,
+  ];
+
+  return [...new Set(candidates.filter(Boolean))];
+}
+
+export function getBasemapPreviewView(idOrDefinition) {
+  const definition = typeof idOrDefinition === "string"
+    ? getBasemap(idOrDefinition)
+    : idOrDefinition;
+
+  if (!definition?.defaultView) {
+    return { ...WINTERTHUR_PREVIEW_VIEW };
+  }
+
+  return {
+    ...definition.defaultView,
+    center: [...definition.defaultView.center],
+  };
 }
 
 export { registry as basemapRegistry };

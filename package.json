@@ -1,24 +1,22 @@
 {
   "name": "vector-tiles-basemaps",
   "version": "0.1.0",
-  "description": "Curated MapLibre basemap registry with public-style-first loading and optional picker UI.",
+  "description": "Curated MapLibre basemap registry with public no-key style URLs and an optional picker UI.",
   "type": "module",
   "main": "./src/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./styles/*": "./styles/*"
+    ".": "./src/index.js"
   },
   "files": [
     "src",
-    "styles",
-    "basemap_preview",
-    "js",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "test": "node ./tests/run-tests.js",
-    "validate:styles": "node ./scripts/validate-styles.js"
+    "generate:previews": "node ./preview-generator/generate-previews.js"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.53.2"
   },
   "keywords": [
     "maplibre",

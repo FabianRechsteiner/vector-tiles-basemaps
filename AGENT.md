@@ -31,11 +31,13 @@ This repository is maintained with an autonomous coding agent.
 
 ## Pre-Change Sync Rule
 
-- Before every code change, the agent MUST first update `master` to the latest available state by pulling it
-- After updating `master`, the agent MUST switch back to `agent` and merge the current `master` into `agent`
+- Before every code change, the agent MUST first update the latest available `master` state without leaving the `agent` branch
+- The agent MUST NOT switch to `master` for this sync workflow
+- The agent MUST fetch or otherwise update the latest `master` reference and merge that `master` state directly into `agent`
 - Only after this sync step is completed may the agent change code in `agent`
 - If the pull or merge cannot be completed cleanly, the agent MUST stop and report the issue before making any code changes
 - The agent must never perform code edits directly on `master` while carrying out this sync rule
+- The user grants standing permission for this repository-specific `master`-into-`agent` sync workflow, so the agent does not need additional confirmation each time it performs the fetch or merge
 
 ## Upstream Sync Policy
 

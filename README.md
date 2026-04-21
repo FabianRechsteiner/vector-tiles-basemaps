@@ -1,54 +1,25 @@
 # vector-tiles-basemaps
 
-Curated MapLibre basemap registry with public-style-first loading, local fallback support, filter helpers, and an optional basemap picker control.
+Ein schlankes MapLibre-Modul mit einer kuratierten Sammlung oeffentlich nutzbarer Vector-Tile-Basemaps ohne API-Key-Pflicht.
 
-## Goals
+Das Modul liefert:
 
-- Prefer public `styleUrl` entries whenever a provider exposes a usable style
-- Allow local static style files only as a fallback when no practical public style URL is available
-- Keep provider metadata machine-readable so host applications can filter basemaps
-- Make MapLibre integration simple without forcing every project to rediscover basemap providers
+- einen Basemap-Katalog
+- Filterfunktionen
+- einen Helper zum Style-Wechsel in MapLibre
+- einen optionalen kompakten Basemap-Switcher
 
-## Included providers
+Die Basemaps werden bewusst nur ueber oeffentliche `styleUrl` eingebunden. Statische Style-Kopien und Fallback-Varianten sind nicht Teil des Produktcodes.
 
-### Stable remote styles
+## Installation
 
-- `vectormap.light`
-- `openfreemap.liberty`
-- `openfreemap.bright`
-- `openfreemap.positron`
-- `versatiles.colorful`
-- `versatiles.eclipse`
-- `versatiles.graybeard`
-- `versatiles.neutrino`
-- `versatiles.shadow`
-- `basemapde.color`
-- `basemapde.relief`
-- `basemapde.gray`
-- `basemapworld.color`
+```bash
+npm install vector-tiles-basemaps
+npm install maplibre-gl
+npm install pmtiles
+```
 
-### Restricted remote styles
-
-- `swisstopo.basemap`
-- `swisstopo.light`
-- `swisstopo.imagery`
-
-### Experimental remote styles
-
-- `openmaptiles.osm-bright`
-- `openmaptiles.positron`
-- `openmaptiles.dark-matter`
-- `openmaptiles.basic`
-
-### Experimental local fallback styles
-
-- `protomaps.light.de`
-- `protomaps.light.en`
-- `protomaps.dark.de`
-- `protomaps.dark.en`
-- `protomaps.data-viz-white.de`
-
-## Package API
+## API
 
 ```js
 import {
@@ -61,15 +32,14 @@ import {
 } from "vector-tiles-basemaps";
 ```
 
-### BasemapDefinition
+## BasemapDefinition
 
 ```ts
 type BasemapDefinition = {
   id: string
   name: string
   provider: string
-  styleUrl?: string
-  localStylePath?: string
+  styleUrl: string
   providerUrl: string
   usagePolicyUrl?: string
   attributionHtml?: string
@@ -78,24 +48,11 @@ type BasemapDefinition = {
   countries?: string[]
   previewUrl?: string
   status: "stable" | "experimental" | "restricted"
-  sourceMode: "remote" | "local-fallback"
   lastVerifiedAt: string
 }
 ```
 
-## Installation
-
-```bash
-npm install vector-tiles-basemaps
-```
-
-If you want to use providers whose style documents reference PMTiles, include the `pmtiles` library in your application and pass it to `applyBasemap`.
-
-```bash
-npm install maplibre-gl pmtiles
-```
-
-## Basic usage
+## Basisnutzung
 
 ```js
 import maplibregl from "maplibre-gl";
@@ -103,7 +60,6 @@ import * as pmtiles from "pmtiles";
 import {
   applyBasemap,
   createBasemapControl,
-  listBasemaps,
 } from "vector-tiles-basemaps";
 
 const map = new maplibregl.Map({
@@ -111,7 +67,13 @@ const map = new maplibregl.Map({
   style: {
     version: 8,
     sources: {},
-    layers: [{ id: "background", type: "background", paint: { "background-color": "#f3f4f6" } }],
+    layers: [
+      {
+        id: "background",
+        type: "background",
+        paint: { "background-color": "#f3f4f6" }
+      }
+    ]
   },
   center: [8.5417, 47.3769],
   zoom: 7,
@@ -124,9 +86,9 @@ map.addControl(
     basemapIds: [
       "vectormap.light",
       "openfreemap.liberty",
+      "openfreemap.dark",
       "versatiles.graybeard",
       "swisstopo.basemap",
-      "protomaps.light.de",
     ],
     applyOptions: { maplibregl, pmtiles },
   }),
@@ -134,44 +96,59 @@ map.addControl(
 );
 ```
 
-## Filtering
+## Filterung
 
 ```js
 const swissMaps = listBasemaps({ country: "CH" });
 const darkMaps = listBasemaps({ variant: "dark" });
 const selectedMaps = listBasemaps({
-  ids: ["vectormap.light", "openfreemap.liberty", "protomaps.light.de"],
+  ids: ["vectormap.light", "openfreemap.fiord", "basemapworld.color"],
 });
 ```
 
-## Public URL first, local fallback second
+## Enthaltene Provider
 
-The registry follows one rule:
+Stabil:
 
-- use `styleUrl` when a provider exposes a practical public style URL
-- use `localStylePath` only when there is no good external style URL for the same basemap
+- `vectormap.light`
+- `openfreemap.liberty`
+- `openfreemap.bright`
+- `openfreemap.positron`
+- `versatiles.colorful`
+- `versatiles.eclipse`
+- `versatiles.graybeard`
+- `versatiles.neutrino`
+- `versatiles.shadow`
+- `basemapworld.color`
 
-That is why the Protomaps styles currently stay in [`styles`](C:/Users/fabia/GitHub/vector-tiles-basemaps/styles) as local fallback assets, while most other providers are referenced remotely.
+Eingeschraenkt:
 
-## Style verification
+- `swisstopo.basemap`
+- `swisstopo.light`
+- `swisstopo.imagery`
 
-The repository includes two checks:
+Experimentell:
 
-- `npm test` for local API behavior
-- `npm run validate:styles` to verify local and remote style documents
+- `openfreemap.dark`
+- `openfreemap.fiord`
 
-The validation script checks:
+## Nicht aufgenommen
 
-- local fallback files exist and parse correctly
-- remote style URLs are reachable
-- loaded documents look like valid MapLibre styles
+- ArcGIS Basemap Styles und Open Basemap Styles:
+  sie verlangen laut Esri-Doku einen Token oder API-Key und fallen damit aus dem no-key-Scope dieses Projekts
+- Protomaps:
+  die gehostete Style-Nutzung ist nicht als stabiler no-key-Provider fuer dieses Projekt geeignet und wurde deshalb entfernt
+
+## Preview-Bilder
+
+Die Erzeugung von PNG-Vorschaubildern ist bewusst nicht Teil des Kernmoduls. Dafuer gibt es das separate Zusatzverzeichnis [`preview-generator`](C:/Users/fabia/GitHub/vector-tiles-basemaps/preview-generator/README.md).
+
+Dort ist dokumentiert:
+
+- wie die Preview-Bilder erzeugt werden
+- welcher Befehl verwendet wird
+- welche Parameter fuer Koordinaten, Zoom, Groesse und Basemap-IDs verfuegbar sind
 
 ## Demo
 
-[`index.html`](C:/Users/fabia/GitHub/vector-tiles-basemaps/index.html) is a static GitHub Pages demo that imports the module directly from source, applies a default basemap, and exposes the optional picker control.
-
-## Notes on provider constraints
-
-- `swisstopo.*` entries are marked `restricted` because usage conditions differ from fully open public world basemaps.
-- `openmaptiles.*` entries are marked `experimental` because the public CDN styles are useful but should not be treated like the strongest long-term public production commitments.
-- `protomaps.*` entries are marked `experimental` and `local-fallback` because the style JSONs are kept in this repository as the supported fallback path.
+[`index.html`](C:/Users/fabia/GitHub/vector-tiles-basemaps/index.html) zeigt die Nutzung des Moduls direkt im Browser mit dem optionalen Basemap-Switcher.

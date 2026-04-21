@@ -1,6 +1,21 @@
 import { getBasemap } from "./basemaps.js";
 
 const PMTILES_PROTOCOL_KEY = "__vectorTilesBasemapsPmtilesProtocol";
+const BASEMAPWORLD_VECTOR_LAYERS = new Set([
+  "building",
+  "housenumber",
+  "landcover",
+  "landuse",
+  "mountain_peak",
+  "park",
+  "place",
+  "poi",
+  "transportation",
+  "transportation_name",
+  "water",
+  "water_name",
+  "waterway",
+]);
 
 function isAbsoluteUrl(value) {
   return /^[a-z][a-z\d+\-.]*:/i.test(value) || value.startsWith("//");
@@ -9,11 +24,6 @@ function isAbsoluteUrl(value) {
 function absolutizeUrl(value, baseUrl) {
   if (!value) {
     return value;
-  }
-
-  if (value.startsWith("pmtiles://")) {
-    const innerUrl = value.slice("pmtiles://".length);
-    return `pmtiles://${absolutizeUrl(innerUrl, baseUrl)}`;
   }
 
   if (isAbsoluteUrl(value) || value.startsWith("data:") || value.startsWith("blob:")) {
@@ -28,18 +38,7 @@ function normalizeSourceUrl(value, baseUrl) {
     return value;
   }
 
-  if (value.startsWith("pmtiles://")) {
-    const innerUrl = value.slice("pmtiles://".length);
-    return `pmtiles://${absolutizeUrl(innerUrl, baseUrl)}`;
-  }
-
-  const absoluteUrl = absolutizeUrl(value, baseUrl);
-
-  if (absoluteUrl.includes(".pmtiles")) {
-    return `pmtiles://${absoluteUrl}`;
-  }
-
-  return absoluteUrl;
+  return absolutizeUrl(value, baseUrl);
 }
 
 function normalizeTiles(tiles, baseUrl) {
@@ -102,17 +101,7 @@ function normalizeStyleDocument(styleDocument, baseUrl) {
   return styleDocument;
 }
 
-async function loadJsonFromFileUrl(fileUrl) {
-  const { readFile } = await import("node:fs/promises");
-  const contents = await readFile(new URL(fileUrl), "utf8");
-  return JSON.parse(contents);
-}
-
 async function loadJsonDocument(url) {
-  if (url.startsWith("file:")) {
-    return loadJsonFromFileUrl(url);
-  }
-
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -120,6 +109,26 @@ async function loadJsonDocument(url) {
   }
 
   return response.json();
+}
+
+function pruneKnownBrokenLayers(id, styleDocument) {
+  if (id !== "basemapworld.color") {
+    return styleDocument;
+  }
+
+  styleDocument.layers = styleDocument.layers.filter((layer) => {
+    if (layer.source !== "smarttiles_wld") {
+      return true;
+    }
+
+    if (typeof layer["source-layer"] !== "string") {
+      return true;
+    }
+
+    return BASEMAPWORLD_VECTOR_LAYERS.has(layer["source-layer"]);
+  });
+
+  return styleDocument;
 }
 
 function styleUsesPmtiles(styleDocument) {
@@ -158,30 +167,29 @@ function ensurePmtilesProtocol(maplibregl, pmtilesLibrary) {
   maplibregl[PMTILES_PROTOCOL_KEY] = true;
 }
 
-export function resolveBasemapStyle(id) {
+export function resolveBasemapStyle(id, options = {}) {
   const definition = getBasemap(id);
 
   if (!definition) {
     throw new Error(`Unknown basemap id "${id}".`);
   }
 
-  const url = definition.styleUrl ?? definition.localStylePath;
+  const url = definition.styleUrl;
 
   if (!url) {
-    throw new Error(`Basemap "${id}" has neither styleUrl nor localStylePath.`);
+    throw new Error(`Basemap "${id}" has no styleUrl.`);
   }
 
   return {
     id: definition.id,
-    sourceMode: definition.sourceMode,
     url,
   };
 }
 
-export async function loadBasemapStyle(id) {
-  const { url } = resolveBasemapStyle(id);
+export async function loadBasemapStyle(id, options = {}) {
+  const { url } = resolveBasemapStyle(id, options);
   const styleDocument = await loadJsonDocument(url);
-  return normalizeStyleDocument(styleDocument, url);
+  return pruneKnownBrokenLayers(id, normalizeStyleDocument(styleDocument, url));
 }
 
 function snapshotView(map) {
@@ -193,8 +201,18 @@ function snapshotView(map) {
   };
 }
 
+function pointInBounds(center, bounds) {
+  if (!bounds || bounds.length !== 4) {
+    return true;
+  }
+
+  const [west, south, east, north] = bounds;
+  return center.lng >= west && center.lng <= east && center.lat >= south && center.lat <= north;
+}
+
 export async function applyBasemap(map, id, options = {}) {
-  const styleDocument = await loadBasemapStyle(id);
+  const basemap = getBasemap(id);
+  const styleDocument = await loadBasemapStyle(id, options);
 
   if (styleUsesPmtiles(styleDocument)) {
     ensurePmtilesProtocol(options.maplibregl ?? globalThis.maplibregl, resolvePmtilesLibrary(options.pmtiles));
@@ -209,5 +227,18 @@ export async function applyBasemap(map, id, options = {}) {
     map.jumpTo(currentView);
   }
 
-  return getBasemap(id);
+  if (options.repositionIfOutsideCoverage && basemap?.bounds && basemap?.defaultView) {
+    const center = map.getCenter();
+
+    if (!pointInBounds(center, basemap.bounds)) {
+      map.jumpTo({
+        center: basemap.defaultView.center,
+        zoom: basemap.defaultView.zoom,
+        bearing: basemap.defaultView.bearing ?? 0,
+        pitch: basemap.defaultView.pitch ?? 0,
+      });
+    }
+  }
+
+  return basemap;
 }

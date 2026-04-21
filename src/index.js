@@ -1,6 +1,8 @@
 export {
   basemapRegistry,
   getBasemap,
+  getBasemapPreviewCandidates,
+  getBasemapPreviewView,
   listBasemaps,
 } from "./basemaps.js";
 
@@ -8,7 +10,6 @@ export {
   applyBasemap,
   loadBasemapStyle,
   resolveBasemapStyle,
-  validateStyleDocument,
 } from "./styles.js";
 
 export {

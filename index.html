@@ -175,7 +175,7 @@
 <body>
     <aside>
         <div class="badge-row">
-            <span class="badge">Public URL First</span>
+            <span class="badge">Remote Only</span>
             <span class="badge">MapLibre</span>
             <span class="badge">Optional Picker</span>
         </div>
@@ -183,7 +183,7 @@
         <div>
             <h1>vector-tiles-basemaps</h1>
             <p>
-                Curated basemap registry for MapLibre with remote style preference and local fallback support.
+                Curated basemap registry for MapLibre with remote style URLs and an optional picker control.
                 The picker in the lower-left corner uses the module's optional control export.
             </p>
         </div>
@@ -195,8 +195,8 @@
 
         <section class="panel">
             <h2>Demo Selection</h2>
-            <p>This demo intentionally mixes remote entries and one local-fallback Protomaps style.</p>
-            <p><code>vectormap.light</code>, <code>openfreemap.liberty</code>, <code>versatiles.graybeard</code>, <code>swisstopo.basemap</code>, <code>protomaps.light.de</code></p>
+            <p>This demo uses only remote style URLs.</p>
+            <p><code>vectormap.light</code>, <code>openfreemap.dark</code>, <code>versatiles.graybeard</code>, <code>basemapworld.color</code>, <code>swisstopo.basemap</code></p>
         </section>
     </aside>
 
@@ -210,6 +210,7 @@
             applyBasemap,
             createBasemapControl,
             getBasemap,
+            listBasemaps,
         } from "./src/index.js";
 
         const defaultBasemapId = "vectormap.light";
@@ -247,7 +248,6 @@
                 ["Provider", basemap.provider],
                 ["Variant", basemap.variant],
                 ["Coverage", basemap.coverage],
-                ["Source mode", basemap.sourceMode],
                 ["Status", `<span class="status status--${basemap.status}">${basemap.status}</span>`],
             ];
 
@@ -269,15 +269,13 @@
 
         map.addControl(
             createBasemapControl({
-                basemapIds: [
-                    "vectormap.light",
-                    "openfreemap.liberty",
-                    "versatiles.graybeard",
-                    "swisstopo.basemap",
-                    "protomaps.light.de"
-                ],
+                basemapIds: listBasemaps().map((definition) => definition.id),
                 initialBasemapId: defaultBasemapId,
-                applyOptions,
+                groupBy: "variant",
+                applyOptions: {
+                    ...applyOptions,
+                    repositionIfOutsideCoverage: true
+                },
                 onChange: renderBasemapMeta
             }),
             "bottom-left"

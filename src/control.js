@@ -1,5 +1,5 @@
 import { applyBasemap } from "./styles.js";
-import { listBasemaps } from "./basemaps.js";
+import { getBasemap, getBasemapPreviewCandidates, listBasemaps } from "./basemaps.js";
 
 const CONTROL_STYLE_ID = "vector-tiles-basemaps-control-style";
 
@@ -25,35 +25,138 @@ function ensureControlStyles() {
     .vtb-control {
       background: rgba(255, 255, 255, 0.95);
       border: 1px solid rgba(148, 163, 184, 0.45);
-      border-radius: 14px;
+      border-radius: 18px;
       box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+      min-width: 86px;
       padding: 10px;
-      width: 144px;
       backdrop-filter: blur(12px);
       font: 12px/1.2 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      position: relative;
+    }
+
+    .vtb-toggle {
+      appearance: none;
+      background: none;
+      border: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0;
+      width: 100%;
+    }
+
+    .vtb-toggle:focus-visible {
+      outline: 2px solid #0f766e;
+      outline-offset: 3px;
+      border-radius: 16px;
+    }
+
+    .vtb-active-tile {
+      border: 2px solid rgba(15, 118, 110, 0.88);
+      border-radius: 16px;
+      box-shadow: 0 10px 22px rgba(15, 118, 110, 0.18);
+      flex: 0 0 auto;
+      height: 60px;
+      overflow: hidden;
+      position: relative;
+      width: 60px;
+    }
+
+    .vtb-toggle-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      text-align: left;
+    }
+
+    .vtb-toggle-name {
+      color: #0f172a;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .vtb-toggle-group {
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .vtb-toggle-caret {
+      color: #0f766e;
+      flex: 0 0 auto;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
+      margin-left: auto;
+      transition: transform 140ms ease;
+    }
+
+    .vtb-control[data-open="true"] .vtb-toggle-caret {
+      transform: rotate(180deg);
+    }
+
+    .vtb-panel {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 18px;
+      bottom: 100%;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+      display: grid;
+      gap: 12px;
+      left: 0;
+      margin-bottom: 10px;
+      max-height: min(60vh, 420px);
+      min-width: 180px;
+      overflow: auto;
+      padding: 12px;
+      position: absolute;
+      width: max-content;
+    }
+
+    .vtb-panel[hidden] {
+      display: none;
+    }
+
+    .vtb-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .vtb-group-title {
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     .vtb-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
+      grid-template-columns: repeat(2, 64px);
     }
 
     .vtb-button {
       appearance: none;
       background: #fff;
       border: 2px solid transparent;
-      border-radius: 12px;
+      border-radius: 16px;
       cursor: pointer;
-      display: flex;
-      align-items: flex-end;
-      justify-content: flex-start;
-      min-height: 58px;
+      display: block;
+      height: 64px;
       overflow: hidden;
-      padding: 8px;
+      padding: 0;
       position: relative;
-      text-align: left;
       transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+      width: 64px;
     }
 
     .vtb-button:hover,
@@ -69,11 +172,26 @@ function ensureControlStyles() {
       box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.4);
     }
 
+    .vtb-button[data-selected="true"] {
+      border-color: rgba(15, 118, 110, 0.88);
+      box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.22);
+    }
+
     .vtb-thumb {
+      display: block;
+      height: 100%;
       inset: 0;
       position: absolute;
+      width: 100%;
+    }
+
+    .vtb-thumb-image {
+      display: block;
+      height: 100%;
       background-position: center;
       background-size: cover;
+      object-fit: cover;
+      width: 100%;
     }
 
     .vtb-thumb--fallback::after {
@@ -89,20 +207,11 @@ function ensureControlStyles() {
       width: 100%;
     }
 
-    .vtb-caption {
-      position: relative;
-      z-index: 1;
-      background: rgba(255, 255, 255, 0.82);
-      border-radius: 999px;
-      color: #0f172a;
-      display: inline-block;
-      font-size: 10px;
-      font-weight: 600;
-      max-width: 100%;
-      overflow: hidden;
-      padding: 3px 8px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .vtb-empty {
+      color: #64748b;
+      font-size: 11px;
+      font-style: italic;
+      padding: 4px 2px 2px;
     }
   `;
 
@@ -122,15 +231,50 @@ function createPreviewElement(definition) {
   const preview = document.createElement("span");
   preview.className = "vtb-thumb";
 
-  if (definition.previewUrl) {
-    preview.style.backgroundImage = `url("${definition.previewUrl}")`;
-  } else {
+  const candidates = getBasemapPreviewCandidates(definition);
+  const image = document.createElement("img");
+  image.className = "vtb-thumb-image";
+  image.alt = "";
+  image.loading = "lazy";
+  image.decoding = "async";
+
+  let index = 0;
+
+  const activateFallback = () => {
+    preview.replaceChildren();
     preview.classList.add("vtb-thumb--fallback");
     preview.dataset.shortLabel = shortLabel(definition.name);
     preview.style.background = variantBackgrounds[definition.variant] ?? variantBackgrounds.light;
+  };
+
+  if (!candidates.length) {
+    activateFallback();
+    return preview;
   }
 
+  image.addEventListener("error", () => {
+    index += 1;
+
+    if (index < candidates.length) {
+      image.src = candidates[index];
+      return;
+    }
+
+    activateFallback();
+  });
+
+  image.src = candidates[index];
+  preview.appendChild(image);
+
   return preview;
+}
+
+function groupLabel(value, groupBy) {
+  if (groupBy === "provider") {
+    return value;
+  }
+
+  return value;
 }
 
 export class BasemapControl {
@@ -140,6 +284,14 @@ export class BasemapControl {
     this.container = null;
     this.buttons = new Map();
     this.activeBasemapId = options.initialBasemapId ?? null;
+    this.items = [];
+    this.panel = null;
+    this.activeButton = null;
+    this.documentPointerHandler = null;
+    this.keydownHandler = null;
+    this.isOpen = false;
+    this.previewBasemapId = null;
+    this.applySequence = 0;
   }
 
   onAdd(map) {
@@ -148,41 +300,184 @@ export class BasemapControl {
     this.map = map;
     this.container = document.createElement("div");
     this.container.className = "maplibregl-ctrl vtb-control";
+    this.container.dataset.open = "false";
 
-    const grid = document.createElement("div");
-    grid.className = "vtb-grid";
-
-    const items = this.options.basemapIds
+    this.items = this.options.basemapIds
       ? listBasemaps({ ids: this.options.basemapIds })
       : listBasemaps(this.options.filters ?? {});
 
-    for (const definition of items) {
+    if (!this.activeBasemapId && this.items.length) {
+      this.activeBasemapId = this.items[0].id;
+    }
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "vtb-toggle";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", "Open basemap selector");
+    toggle.addEventListener("click", () => {
+      this.togglePanel();
+    });
+
+    this.activeButton = toggle;
+    this.container.appendChild(toggle);
+
+    const panel = document.createElement("div");
+    panel.className = "vtb-panel";
+    panel.hidden = true;
+    panel.addEventListener("pointerleave", () => {
+      this.restoreActiveBasemapPreview();
+    });
+    this.panel = panel;
+    this.container.appendChild(panel);
+
+    this.documentPointerHandler = (event) => {
+      if (this.isOpen && this.container && !this.container.contains(event.target)) {
+        this.restoreActiveBasemapPreview();
+        this.setPanelOpen(false);
+      }
+    };
+
+    this.keydownHandler = (event) => {
+      if (event.key === "Escape") {
+        this.restoreActiveBasemapPreview();
+        this.setPanelOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", this.documentPointerHandler);
+    document.addEventListener("keydown", this.keydownHandler);
+
+    this.render();
+    return this.container;
+  }
+
+  onRemove() {
+    this.container?.remove();
+    this.buttons.clear();
+    if (this.documentPointerHandler) {
+      document.removeEventListener("pointerdown", this.documentPointerHandler);
+    }
+    if (this.keydownHandler) {
+      document.removeEventListener("keydown", this.keydownHandler);
+    }
+    this.map = null;
+    this.container = null;
+    this.panel = null;
+    this.activeButton = null;
+    this.items = [];
+    this.documentPointerHandler = null;
+    this.keydownHandler = null;
+    this.isOpen = false;
+  }
+
+  render() {
+    this.renderActiveButton();
+    this.renderPanel();
+  }
+
+  renderActiveButton() {
+    const visibleBasemapId = this.previewBasemapId ?? this.activeBasemapId;
+    const activeDefinition = this.items.find((item) => item.id === visibleBasemapId) ?? this.items[0];
+
+    if (!activeDefinition || !this.activeButton) {
+      return;
+    }
+
+    this.activeButton.innerHTML = "";
+    this.activeButton.title = activeDefinition.name;
+
+    const activeTile = document.createElement("span");
+    activeTile.className = "vtb-active-tile";
+    activeTile.appendChild(createPreviewElement(activeDefinition));
+    this.activeButton.appendChild(activeTile);
+
+    const meta = document.createElement("span");
+    meta.className = "vtb-toggle-meta";
+
+    const name = document.createElement("span");
+    name.className = "vtb-toggle-name";
+    name.textContent = activeDefinition.name;
+    meta.appendChild(name);
+
+    const group = document.createElement("span");
+    group.className = "vtb-toggle-group";
+    group.textContent = (this.options.groupBy ?? "variant") === "provider" ? activeDefinition.provider : activeDefinition.variant;
+    meta.appendChild(group);
+
+    this.activeButton.appendChild(meta);
+
+    const caret = document.createElement("span");
+    caret.className = "vtb-toggle-caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.textContent = "▾";
+    this.activeButton.appendChild(caret);
+  }
+
+  renderPanel() {
+    if (!this.panel) {
+      return;
+    }
+
+    this.panel.innerHTML = "";
+    this.buttons.clear();
+
+    const groupBy = this.options.groupBy ?? "variant";
+    const grouped = new Map();
+
+    for (const definition of this.items) {
+      const key = groupBy === "provider" ? definition.provider : definition.variant;
+
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+
+      grouped.get(key).push(definition);
+    }
+
+    for (const [groupKey, definitions] of grouped.entries()) {
+      const section = document.createElement("section");
+      section.className = "vtb-group";
+
+      const title = document.createElement("div");
+      title.className = "vtb-group-title";
+      title.textContent = groupLabel(groupKey, groupBy);
+      section.appendChild(title);
+
+      const grid = document.createElement("div");
+      grid.className = "vtb-grid";
+
+      for (const definition of definitions) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "vtb-button";
+      button.title = definition.name;
       button.setAttribute("aria-label", `Use ${definition.name}`);
-      button.setAttribute("aria-pressed", String(definition.id === this.activeBasemapId));
+      button.setAttribute("aria-pressed", String(definition.id === this.previewBasemapId));
+      button.dataset.selected = String(definition.id === this.activeBasemapId);
 
       button.appendChild(createPreviewElement(definition));
 
-      const caption = document.createElement("span");
-      caption.className = "vtb-caption";
-      caption.textContent = definition.name;
-      button.appendChild(caption);
+      button.addEventListener("pointerenter", () => {
+        this.previewBasemap(definition.id);
+      });
+
+      button.addEventListener("focus", () => {
+        this.previewBasemap(definition.id);
+      });
 
       button.addEventListener("click", async () => {
-        if (!this.map) {
-          return;
+        for (const candidate of this.buttons.values()) {
+          candidate.disabled = true;
         }
 
-        button.disabled = true;
-
         try {
-          await applyBasemap(this.map, definition.id, this.options.applyOptions ?? {});
-          this.setActiveBasemap(definition.id);
-          this.options.onChange?.(definition);
+          await this.applyBasemapId(definition.id, { commit: true });
+          this.setPanelOpen(false);
         } finally {
-          button.disabled = false;
+          for (const candidate of this.buttons.values()) {
+            candidate.disabled = false;
+          }
         }
       });
 
@@ -190,23 +485,84 @@ export class BasemapControl {
       grid.appendChild(button);
     }
 
-    this.container.appendChild(grid);
-    return this.container;
-  }
-
-  onRemove() {
-    this.container?.remove();
-    this.buttons.clear();
-    this.map = null;
-    this.container = null;
+      section.appendChild(grid);
+      this.panel.appendChild(section);
+    }
   }
 
   setActiveBasemap(id) {
     this.activeBasemapId = id;
+    this.render();
+  }
 
-    for (const [buttonId, button] of this.buttons.entries()) {
-      button.setAttribute("aria-pressed", String(buttonId === id));
+  async applyBasemapId(id, { commit = false } = {}) {
+    if (!this.map) {
+      return null;
     }
+
+    const sequence = ++this.applySequence;
+    const definition = getBasemap(id);
+
+    if (!definition) {
+      return null;
+    }
+
+    await applyBasemap(this.map, id, this.options.applyOptions ?? {});
+
+    if (sequence !== this.applySequence) {
+      return definition;
+    }
+
+    if (commit) {
+      this.previewBasemapId = null;
+      this.activeBasemapId = id;
+      this.options.onChange?.(definition);
+    } else {
+      this.previewBasemapId = id;
+    }
+
+    this.render();
+    return definition;
+  }
+
+  previewBasemap(id) {
+    if (!this.isOpen || id === this.previewBasemapId || id === this.activeBasemapId && this.previewBasemapId == null) {
+      return;
+    }
+
+    void this.applyBasemapId(id);
+  }
+
+  restoreActiveBasemapPreview() {
+    if (!this.previewBasemapId || this.previewBasemapId === this.activeBasemapId) {
+      this.previewBasemapId = null;
+      this.render();
+      return;
+    }
+
+    const activeBasemapId = this.activeBasemapId;
+    this.previewBasemapId = null;
+    void this.applyBasemapId(activeBasemapId);
+  }
+
+  togglePanel() {
+    this.setPanelOpen(!this.isOpen);
+  }
+
+  setPanelOpen(open) {
+    if (!open) {
+      this.restoreActiveBasemapPreview();
+    }
+
+    this.isOpen = open;
+
+    if (!this.container || !this.panel || !this.activeButton) {
+      return;
+    }
+
+    this.container.dataset.open = String(open);
+    this.panel.hidden = !open;
+    this.activeButton.setAttribute("aria-expanded", String(open));
   }
 }
 

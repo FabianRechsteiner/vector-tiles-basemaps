@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Preview Renderer</title>
+    <link href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" rel="stylesheet">
+    <script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "pmtiles": "https://cdn.jsdelivr.net/npm/pmtiles@4.3.0/+esm"
+            }
+        }
+    </script>
+    <style>
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        #previewMap {
+            width: 100%;
+            height: 100%;
+        }
+
+        .maplibregl-ctrl-container {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="previewMap"></div>
+    <script type="module">
+        import * as pmtiles from "pmtiles";
+        import { applyBasemap } from "../src/index.js";
+
+        const params = new URLSearchParams(window.location.search);
+        const basemapId = params.get("basemap");
+        const width = Number(params.get("width") ?? 160);
+        const height = Number(params.get("height") ?? 160);
+        const center = [
+            Number(params.get("lng") ?? 8.7147),
+            Number(params.get("lat") ?? 47.4951),
+        ];
+        const zoom = Number(params.get("zoom") ?? 12);
+        const bearing = Number(params.get("bearing") ?? 0);
+        const pitch = Number(params.get("pitch") ?? 0);
+
+        document.documentElement.style.width = `${width}px`;
+        document.documentElement.style.height = `${height}px`;
+        document.body.style.width = `${width}px`;
+        document.body.style.height = `${height}px`;
+
+        function failPreview(error) {
+            const message = error?.message || error?.toString?.() || "Unknown preview renderer error";
+            console.error(message);
+            globalThis.__previewError = message;
+        }
+
+        function markPreviewReady() {
+            if (globalThis.__previewReady || globalThis.__previewError) {
+                return;
+            }
+
+            globalThis.__previewReady = true;
+        }
+
+        const map = new maplibregl.Map({
+            container: "previewMap",
+            center,
+            zoom,
+            bearing,
+            pitch,
+            interactive: false,
+            attributionControl: false,
+            style: {
+                version: 8,
+                sources: {},
+                layers: [
+                    {
+                        id: "background",
+                        type: "background",
+                        paint: { "background-color": "#ffffff" }
+                    }
+                ]
+            }
+        });
+
+        map.on("error", (event) => failPreview(event?.error));
+
+        try {
+            await applyBasemap(map, basemapId, { maplibregl, pmtiles });
+
+            let finished = false;
+            const finish = (delay = 0) => {
+                if (finished) {
+                    return;
+                }
+
+                finished = true;
+                window.setTimeout(markPreviewReady, delay);
+            };
+
+            map.once("idle", () => finish(400));
+            map.once("render", () => finish(1200));
+            window.setTimeout(() => finish(0), 5000);
+        } catch (error) {
+            failPreview(error);
+        }
+    </script>
+</body>
+</html>
