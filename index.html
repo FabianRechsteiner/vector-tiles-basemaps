@@ -3,136 +3,285 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Map with Multiple Backgrounds</title>
-    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
-    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    <!-- Externe Basemap-Konfiguration -->
-    <script src="js/vector-tiles-basemaps.js"></script>
+    <title>vector-tiles-basemaps Demo</title>
+    <link href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" rel="stylesheet">
+    <script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "pmtiles": "https://cdn.jsdelivr.net/npm/pmtiles@4.3.0/+esm"
+            }
+        }
+    </script>
     <style>
+        :root {
+            color-scheme: light;
+            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            --panel-bg: rgba(255, 255, 255, 0.92);
+            --panel-border: rgba(148, 163, 184, 0.38);
+            --panel-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
+            --page-bg: radial-gradient(circle at top left, #dff3ff 0%, #eef4f7 34%, #dfe7ea 100%);
+            --text-main: #0f172a;
+            --text-subtle: #475569;
+            --accent: #0f766e;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         html, body {
-            margin: 0;
-            padding: 0;
             height: 100%;
-            overflow: hidden; /* Verhindert jeglichen Scrollbalken */
-        }
-        #map {
-            width: 100%;
-            height: 100vh;
+            margin: 0;
         }
 
-        .map-selector {
-            position: absolute;
-            bottom: 5px;
-            left: 5px;
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 2px;
-            border-radius: 10px;
+        body {
+            background: var(--page-bg);
+            color: var(--text-main);
+            display: grid;
+            grid-template-columns: minmax(280px, 360px) 1fr;
+            overflow: hidden;
+        }
+
+        aside {
+            backdrop-filter: blur(18px);
+            background: var(--panel-bg);
+            border-right: 1px solid var(--panel-border);
+            box-shadow: var(--panel-shadow);
             display: flex;
-            gap: 10px;
-            z-index: 999;
-        }
-
-        .map-selector img {
-            width: 50px;
-            height: 50px;
-            cursor: pointer;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            opacity: 0.6;
-            transition: border 0.3s, opacity 0.3s;
-        }
-
-        .map-selector img.active,
-        .map-selector img:hover {
-            opacity: 1;
-            border-color: #333;
-        }
-
-        .map-selector-options {
-            display: none;
             flex-direction: column;
-            gap: 5px;
+            gap: 18px;
+            padding: 28px 24px;
+            position: relative;
+            z-index: 2;
         }
 
-        .map-selector.show-options .map-selector-options {
+        h1 {
+            font-size: 1.6rem;
+            line-height: 1.1;
+            margin: 0;
+        }
+
+        p {
+            color: var(--text-subtle);
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        .badge-row {
             display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .badge {
+            background: rgba(15, 118, 110, 0.1);
+            border: 1px solid rgba(15, 118, 110, 0.18);
+            border-radius: 999px;
+            color: var(--accent);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 6px 10px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 18px;
+            display: grid;
+            gap: 10px;
+            padding: 16px;
+        }
+
+        .panel h2 {
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        dl {
+            display: grid;
+            gap: 10px;
+            margin: 0;
+        }
+
+        dt {
+            color: var(--text-subtle);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        dd {
+            margin: 2px 0 0;
+        }
+
+        code {
+            background: rgba(148, 163, 184, 0.14);
+            border-radius: 8px;
+            padding: 2px 6px;
+        }
+
+        .status {
+            align-items: center;
+            display: inline-flex;
+            gap: 6px;
+        }
+
+        .status::before {
+            background: currentColor;
+            border-radius: 999px;
+            content: "";
+            display: inline-block;
+            height: 8px;
+            width: 8px;
+        }
+
+        .status--stable {
+            color: #166534;
+        }
+
+        .status--experimental {
+            color: #92400e;
+        }
+
+        .status--restricted {
+            color: #1d4ed8;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .map-shell {
+            min-width: 0;
+            position: relative;
+        }
+
+        @media (max-width: 960px) {
+            body {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+
+            aside {
+                border-bottom: 1px solid var(--panel-border);
+                border-right: 0;
+            }
         }
     </style>
 </head>
 <body>
-
-    <div id="map"></div>
-
-    <div class="map-selector" id="mapSelector">
-        <img id="currentMap" src="../basemap_preview/VersaTiles_Colorful.png" alt="Current Map" onclick="toggleMaps()">
-        <div class="map-selector-options" id="otherMaps">
-            <img src="../basemap_preview/VersaTiles_Colorful.png" alt="Map 1" onclick="setBasemap('VersaTiles_Colorful')">
-            <img src="../basemap_preview/VersaTiles_Graybeard.png" alt="Map 2" onclick="setBasemap('VersaTiles_Graybeard')">
-            <img src="../basemap_preview/Swisstopo_Basemap.png" alt="Map 3" onclick="setBasemap('Swisstopo_Basemap')">
-            <img src="../basemap_preview/Basemap_World.png" alt="Map 4" onclick="setBasemap('Basemap_DE_Colored')">
-            <img src="../basemap_preview/Basemap_World.png" alt="Map 4" onclick="setBasemap('Basemap_World')">
+    <aside>
+        <div class="badge-row">
+            <span class="badge">Public URL First</span>
+            <span class="badge">MapLibre</span>
+            <span class="badge">Optional Picker</span>
         </div>
-    </div>
 
-    <script>
-        // Initialize the MapLibre map
+        <div>
+            <h1>vector-tiles-basemaps</h1>
+            <p>
+                Curated basemap registry for MapLibre with remote style preference and local fallback support.
+                The picker in the lower-left corner uses the module's optional control export.
+            </p>
+        </div>
+
+        <section class="panel">
+            <h2>Current Basemap</h2>
+            <dl id="basemapMeta"></dl>
+        </section>
+
+        <section class="panel">
+            <h2>Demo Selection</h2>
+            <p>This demo intentionally mixes remote entries and one local-fallback Protomaps style.</p>
+            <p><code>vectormap.light</code>, <code>openfreemap.liberty</code>, <code>versatiles.graybeard</code>, <code>swisstopo.basemap</code>, <code>protomaps.light.de</code></p>
+        </section>
+    </aside>
+
+    <main class="map-shell">
+        <div id="map"></div>
+    </main>
+
+    <script type="module">
+        import * as pmtiles from "pmtiles";
+        import {
+            applyBasemap,
+            createBasemapControl,
+            getBasemap,
+        } from "./src/index.js";
+
+        const defaultBasemapId = "vectormap.light";
+        const metaTarget = document.getElementById("basemapMeta");
+
         const map = new maplibregl.Map({
-            container: 'map',
-            style: 'https://tiles.versatiles.org/assets/styles/colorful.json',
-            center: [9.061, 47.5835],
-            zoom: 16
+            container: "map",
+            style: {
+                version: 8,
+                sources: {},
+                layers: [
+                    {
+                        id: "background",
+                        type: "background",
+                        paint: {
+                            "background-color": "#e5edf3"
+                        }
+                    }
+                ]
+            },
+            center: [8.5417, 47.3769],
+            zoom: 7,
+            pitch: 0,
+            bearing: 0
         });
 
-        // Globale Variable für die aktuelle Attribution-Control
-        let currentAttributionControl = null;
+        map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-        // Change the basemap
-        function setBasemap(basemapId) {
-            let selectedBasemap;
+        function renderBasemapMeta(basemap) {
+            metaTarget.innerHTML = "";
 
-            // Suche das Basemap-Objekt basierend auf dem basemapId
-            switch (basemapId) {
-                case 'VersaTiles_Colorful':
-                    selectedBasemap = VersaTiles_Colorful;
-                    break;
-                case 'VersaTiles_Graybeard':
-                    selectedBasemap = VersaTiles_Graybeard;
-                    break;
-                case 'Swisstopo_Basemap':
-                    selectedBasemap = Swisstopo_Basemap;
-                    break;
-                case 'Basemap_DE_Colored':
-                    selectedBasemap = Basemap_DE_Colored;
-                    break;
-                case 'Basemap_World':
-                    selectedBasemap = Basemap_World;
-                    break;
-                default:
-                    selectedBasemap = VersaTiles_Colorful; // Default-Wert
+            const rows = [
+                ["Name", basemap.name],
+                ["ID", basemap.id],
+                ["Provider", basemap.provider],
+                ["Variant", basemap.variant],
+                ["Coverage", basemap.coverage],
+                ["Source mode", basemap.sourceMode],
+                ["Status", `<span class="status status--${basemap.status}">${basemap.status}</span>`],
+            ];
+
+            for (const [term, value] of rows) {
+                const wrapper = document.createElement("div");
+                const dt = document.createElement("dt");
+                const dd = document.createElement("dd");
+                dt.textContent = term;
+                dd.innerHTML = value;
+                wrapper.append(dt, dd);
+                metaTarget.appendChild(wrapper);
             }
-
-            // Ändere den Kartenausdruck (Style)
-            map.setStyle(selectedBasemap.styleUrl);
-
-            // Entferne die aktuelle Attribution-Control, falls vorhanden
-            if (currentAttributionControl) {
-                map.removeControl(currentAttributionControl);
-                currentAttributionControl = null; // Setze die Variable zurück
-            }
-
-            // Kein Attribution-Control hinzufügen, wenn du es entfernen möchtest
-
-            // Update the active map icon
-            document.getElementById('currentMap').src = document.querySelector(`[onclick="setBasemap('${basemapId}')"]`).src;
-
-            // Hide other maps
-            toggleMaps();
         }
 
-        // Toggle visibility of other basemap options
-        function toggleMaps() {
-            document.getElementById('mapSelector').classList.toggle('show-options');
-        }
+        const applyOptions = { maplibregl, pmtiles };
+
+        await applyBasemap(map, defaultBasemapId, applyOptions);
+        renderBasemapMeta(getBasemap(defaultBasemapId));
+
+        map.addControl(
+            createBasemapControl({
+                basemapIds: [
+                    "vectormap.light",
+                    "openfreemap.liberty",
+                    "versatiles.graybeard",
+                    "swisstopo.basemap",
+                    "protomaps.light.de"
+                ],
+                initialBasemapId: defaultBasemapId,
+                applyOptions,
+                onChange: renderBasemapMeta
+            }),
+            "bottom-left"
+        );
     </script>
 </body>
 </html>

@@ -1,27 +1,3 @@
-BasemapBuildsVisual Tests@57e1e43
-https://demo-bucket.protomaps.com/v4.pmtiles
-load
-fit bounds
-theme
-
-dark
-language
-
-en (English)
-local sprites
-bboxes
-
-main
-Close style JSON
-
-
-
-
-
-Protomaps © OpenStreetMap
-tiles@4.1.0 2025-01-27 z@8.76
-Drag .pmtiles here to view
-Copy to clipboard
 {
     "version": 8,
     "sources": {
