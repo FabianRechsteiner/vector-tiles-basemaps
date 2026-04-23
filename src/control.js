@@ -519,6 +519,7 @@ export class BasemapControl {
       this.options.onChange?.(definition);
     } else {
       this.previewBasemapId = id;
+      this.options.onPreview?.(definition);
     }
 
     this.render();
@@ -536,12 +537,14 @@ export class BasemapControl {
   restoreActiveBasemapPreview() {
     if (!this.previewBasemapId || this.previewBasemapId === this.activeBasemapId) {
       this.previewBasemapId = null;
+      this.options.onPreview?.(getBasemap(this.activeBasemapId));
       this.render();
       return;
     }
 
     const activeBasemapId = this.activeBasemapId;
     this.previewBasemapId = null;
+    this.options.onPreview?.(getBasemap(activeBasemapId));
     void this.applyBasemapId(activeBasemapId);
   }
 

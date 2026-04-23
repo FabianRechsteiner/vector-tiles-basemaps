@@ -47,7 +47,6 @@ type BasemapDefinition = {
   coverage: "world" | "country" | "region"
   countries?: string[]
   previewUrl?: string
-  status: "stable" | "experimental" | "restricted"
   lastVerifiedAt: string
 }
 ```

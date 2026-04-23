@@ -28,7 +28,6 @@ const registry = Object.freeze([
     countries: ["CH", "LI"],
     bounds: [5.95, 45.73, 10.65, 47.95],
     defaultView: WINTERTHUR_PREVIEW_VIEW,
-    status: "stable",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -41,7 +40,6 @@ const registry = Object.freeze([
     attributionHtml: "OpenFreeMap &copy; OpenMapTiles Data from OpenStreetMap",
     variant: "light",
     coverage: "world",
-    status: "stable",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -54,7 +52,6 @@ const registry = Object.freeze([
     attributionHtml: "OpenFreeMap &copy; OpenMapTiles Data from OpenStreetMap",
     variant: "colorful",
     coverage: "world",
-    status: "stable",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -67,7 +64,6 @@ const registry = Object.freeze([
     attributionHtml: "OpenFreeMap &copy; OpenMapTiles Data from OpenStreetMap",
     variant: "gray",
     coverage: "world",
-    status: "stable",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -80,7 +76,6 @@ const registry = Object.freeze([
     attributionHtml: "OpenFreeMap &copy; OpenMapTiles Data from OpenStreetMap",
     variant: "dark",
     coverage: "world",
-    status: "experimental",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -93,7 +88,6 @@ const registry = Object.freeze([
     attributionHtml: "OpenFreeMap &copy; OpenMapTiles Data from OpenStreetMap",
     variant: "dark",
     coverage: "world",
-    status: "experimental",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -106,7 +100,6 @@ const registry = Object.freeze([
     variant: "colorful",
     coverage: "world",
     previewUrl: assetUrl("../basemap_preview/VersaTiles_Colorful.png"),
-    status: "stable",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -118,7 +111,6 @@ const registry = Object.freeze([
     usagePolicyUrl: "https://docs.versatiles.org/guides/use_tiles_versatiles_org",
     variant: "dark",
     coverage: "world",
-    status: "stable",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -131,7 +123,6 @@ const registry = Object.freeze([
     variant: "gray",
     coverage: "world",
     previewUrl: assetUrl("../basemap_preview/VersaTiles_Graybeard.png"),
-    status: "stable",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -143,7 +134,6 @@ const registry = Object.freeze([
     usagePolicyUrl: "https://docs.versatiles.org/guides/use_tiles_versatiles_org",
     variant: "light",
     coverage: "world",
-    status: "stable",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -155,7 +145,6 @@ const registry = Object.freeze([
     usagePolicyUrl: "https://docs.versatiles.org/guides/use_tiles_versatiles_org",
     variant: "dark",
     coverage: "world",
-    status: "stable",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -169,7 +158,6 @@ const registry = Object.freeze([
     coverage: "world",
     defaultView: WINTERTHUR_PREVIEW_VIEW,
     previewUrl: assetUrl("../basemap_preview/Basemap_World.png"),
-    status: "stable",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -185,7 +173,6 @@ const registry = Object.freeze([
     bounds: [5.95, 45.73, 10.65, 47.95],
     defaultView: WINTERTHUR_PREVIEW_VIEW,
     previewUrl: assetUrl("../basemap_preview/Swisstopo_Basemap.png"),
-    status: "restricted",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -200,7 +187,6 @@ const registry = Object.freeze([
     countries: ["CH", "LI"],
     bounds: [5.95, 45.73, 10.65, 47.95],
     defaultView: WINTERTHUR_PREVIEW_VIEW,
-    status: "restricted",
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -215,7 +201,6 @@ const registry = Object.freeze([
     countries: ["CH", "LI"],
     bounds: [5.95, 45.73, 10.65, 47.95],
     defaultView: WINTERTHUR_PREVIEW_VIEW,
-    status: "restricted",
     lastVerifiedAt: VERIFIED_AT,
   },
 ]);
@@ -258,7 +243,6 @@ export function listBasemaps(filters = {}) {
     variant,
     coverage,
     country,
-    status,
     ids,
     excludeIds,
   } = filters;
@@ -279,7 +263,6 @@ export function listBasemaps(filters = {}) {
       includesValue(definition.provider, provider) &&
       includesValue(definition.variant, variant) &&
       includesValue(definition.coverage, coverage) &&
-      includesValue(definition.status, status) &&
       matchesCountry(definition, country)
     );
   });

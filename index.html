@@ -40,6 +40,7 @@
             color: var(--text-main);
             display: grid;
             grid-template-columns: minmax(280px, 360px) 1fr;
+            min-height: 100vh;
             overflow: hidden;
         }
 
@@ -68,22 +69,6 @@
             margin: 0;
         }
 
-        .badge-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .badge {
-            background: rgba(15, 118, 110, 0.1);
-            border: 1px solid rgba(15, 118, 110, 0.18);
-            border-radius: 999px;
-            color: var(--accent);
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 6px 10px;
-        }
-
         .panel {
             background: rgba(255, 255, 255, 0.72);
             border: 1px solid rgba(255, 255, 255, 0.7);
@@ -104,6 +89,11 @@
             margin: 0;
         }
 
+        #basemapMeta > div {
+            display: grid;
+            gap: 2px;
+        }
+
         dt {
             color: var(--text-subtle);
             font-size: 0.72rem;
@@ -122,33 +112,6 @@
             padding: 2px 6px;
         }
 
-        .status {
-            align-items: center;
-            display: inline-flex;
-            gap: 6px;
-        }
-
-        .status::before {
-            background: currentColor;
-            border-radius: 999px;
-            content: "";
-            display: inline-block;
-            height: 8px;
-            width: 8px;
-        }
-
-        .status--stable {
-            color: #166534;
-        }
-
-        .status--experimental {
-            color: #92400e;
-        }
-
-        .status--restricted {
-            color: #1d4ed8;
-        }
-
         #map {
             height: 100%;
             width: 100%;
@@ -159,44 +122,103 @@
             position: relative;
         }
 
+        .intro {
+            display: grid;
+            gap: 10px;
+        }
+
         @media (max-width: 960px) {
             body {
                 grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr;
+                grid-template-rows: auto minmax(52vh, 1fr);
+                overflow: auto;
             }
 
             aside {
                 border-bottom: 1px solid var(--panel-border);
                 border-right: 0;
+                gap: 14px;
+                padding: 20px 18px;
+            }
+
+            h1 {
+                font-size: 1.35rem;
+            }
+
+            .panel {
+                padding: 14px;
+            }
+
+            .map-shell,
+            #map {
+                min-height: 52vh;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                grid-template-rows: auto minmax(58vh, 1fr);
+            }
+
+            aside {
+                padding: 18px 16px;
+            }
+
+            h1 {
+                font-size: 1.2rem;
+            }
+
+            p {
+                font-size: 0.95rem;
+                line-height: 1.5;
+            }
+        }
+
+        @media (max-width: 640px) and (orientation: portrait) {
+            body {
+                grid-template-rows: auto minmax(64vh, 1fr);
+            }
+
+            aside {
+                gap: 12px;
+                padding: 16px 14px;
+            }
+
+            .panel {
+                gap: 8px;
+                padding: 12px;
+            }
+
+            #basemapMeta {
+                column-gap: 12px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                row-gap: 8px;
+            }
+
+            dt {
+                font-size: 0.66rem;
+            }
+
+            dd {
+                font-size: 0.95rem;
+                word-break: break-word;
             }
         }
     </style>
 </head>
 <body>
     <aside>
-        <div class="badge-row">
-            <span class="badge">Remote Only</span>
-            <span class="badge">MapLibre</span>
-            <span class="badge">Optional Picker</span>
-        </div>
-
-        <div>
+        <div class="intro">
             <h1>vector-tiles-basemaps</h1>
             <p>
-                Curated basemap registry for MapLibre with remote style URLs and an optional picker control.
-                The picker in the lower-left corner uses the module's optional control export.
+                Explore openly usable vector basemaps for MapLibre and switch between them instantly.
+                The compact picker in the lower-left corner previews each style directly on the map.
             </p>
         </div>
 
         <section class="panel">
             <h2>Current Basemap</h2>
             <dl id="basemapMeta"></dl>
-        </section>
-
-        <section class="panel">
-            <h2>Demo Selection</h2>
-            <p>This demo uses only remote style URLs.</p>
-            <p><code>vectormap.light</code>, <code>openfreemap.dark</code>, <code>versatiles.graybeard</code>, <code>basemapworld.color</code>, <code>swisstopo.basemap</code></p>
         </section>
     </aside>
 
@@ -231,8 +253,8 @@
                     }
                 ]
             },
-            center: [8.5417, 47.3769],
-            zoom: 7,
+            center: [8.7241, 47.4988],
+            zoom: 10.8,
             pitch: 0,
             bearing: 0
         });
@@ -248,7 +270,6 @@
                 ["Provider", basemap.provider],
                 ["Variant", basemap.variant],
                 ["Coverage", basemap.coverage],
-                ["Status", `<span class="status status--${basemap.status}">${basemap.status}</span>`],
             ];
 
             for (const [term, value] of rows) {
@@ -276,7 +297,8 @@
                     ...applyOptions,
                     repositionIfOutsideCoverage: true
                 },
-                onChange: renderBasemapMeta
+                onChange: renderBasemapMeta,
+                onPreview: renderBasemapMeta
             }),
             "bottom-left"
         );
