@@ -1,15 +1,13 @@
 # vector-tiles-basemaps
 
-Ein schlankes MapLibre-Modul mit einer kuratierten Sammlung oeffentlich nutzbarer Vector-Tile-Basemaps ohne API-Key-Pflicht.
+Lightweight MapLibre basemap registry for publicly usable vector tile styles without required API keys.
 
-Das Modul liefert:
+It provides:
 
-- einen Basemap-Katalog
-- Filterfunktionen
-- einen Helper zum Style-Wechsel in MapLibre
-- einen optionalen kompakten Basemap-Switcher
-
-Die Basemaps werden bewusst nur ueber oeffentliche `styleUrl` eingebunden. Statische Style-Kopien und Fallback-Varianten sind nicht Teil des Produktcodes.
+- a curated basemap catalog
+- simple filter helpers
+- a style switch helper for MapLibre
+- an optional compact basemap picker
 
 ## Installation
 
@@ -51,7 +49,7 @@ type BasemapDefinition = {
 }
 ```
 
-## Basisnutzung
+## Usage
 
 ```js
 import maplibregl from "maplibre-gl";
@@ -74,8 +72,8 @@ const map = new maplibregl.Map({
       }
     ]
   },
-  center: [8.5417, 47.3769],
-  zoom: 7,
+  center: [8.7241, 47.4988],
+  zoom: 10.8,
 });
 
 await applyBasemap(map, "vectormap.light", { maplibregl, pmtiles });
@@ -84,9 +82,9 @@ map.addControl(
   createBasemapControl({
     basemapIds: [
       "vectormap.light",
-      "openfreemap.liberty",
       "openfreemap.dark",
       "versatiles.graybeard",
+      "basemapworld.color",
       "swisstopo.basemap",
     ],
     applyOptions: { maplibregl, pmtiles },
@@ -95,7 +93,7 @@ map.addControl(
 );
 ```
 
-## Filterung
+## Filtering
 
 ```js
 const swissMaps = listBasemaps({ country: "CH" });
@@ -105,49 +103,28 @@ const selectedMaps = listBasemaps({
 });
 ```
 
-## Enthaltene Provider
-
-Stabil:
+## Providers
 
 - `vectormap.light`
 - `openfreemap.liberty`
 - `openfreemap.bright`
 - `openfreemap.positron`
+- `openfreemap.dark`
+- `openfreemap.fiord`
 - `versatiles.colorful`
 - `versatiles.eclipse`
 - `versatiles.graybeard`
 - `versatiles.neutrino`
 - `versatiles.shadow`
 - `basemapworld.color`
-
-Eingeschraenkt:
-
 - `swisstopo.basemap`
 - `swisstopo.light`
 - `swisstopo.imagery`
 
-Experimentell:
+## Preview Images
 
-- `openfreemap.dark`
-- `openfreemap.fiord`
-
-## Nicht aufgenommen
-
-- ArcGIS Basemap Styles und Open Basemap Styles:
-  sie verlangen laut Esri-Doku einen Token oder API-Key und fallen damit aus dem no-key-Scope dieses Projekts
-- Protomaps:
-  die gehostete Style-Nutzung ist nicht als stabiler no-key-Provider fuer dieses Projekt geeignet und wurde deshalb entfernt
-
-## Preview-Bilder
-
-Die Erzeugung von PNG-Vorschaubildern ist bewusst nicht Teil des Kernmoduls. Dafuer gibt es das separate Zusatzverzeichnis [`preview-generator`](C:/Users/fabia/GitHub/vector-tiles-basemaps/preview-generator/README.md).
-
-Dort ist dokumentiert:
-
-- wie die Preview-Bilder erzeugt werden
-- welcher Befehl verwendet wird
-- welche Parameter fuer Koordinaten, Zoom, Groesse und Basemap-IDs verfuegbar sind
+Preview image generation is documented separately in [`preview-generator/README.md`](C:/Users/fabia/GitHub/vector-tiles-basemaps/preview-generator/README.md).
 
 ## Demo
 
-[`index.html`](C:/Users/fabia/GitHub/vector-tiles-basemaps/index.html) zeigt die Nutzung des Moduls direkt im Browser mit dem optionalen Basemap-Switcher.
+The static demo lives in [`index.html`](C:/Users/fabia/GitHub/vector-tiles-basemaps/index.html).
