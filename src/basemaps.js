@@ -99,7 +99,6 @@ const registry = Object.freeze([
     usagePolicyUrl: "https://docs.versatiles.org/guides/use_tiles_versatiles_org",
     variant: "colorful",
     coverage: "world",
-    previewUrl: assetUrl("../basemap_preview/VersaTiles_Colorful.png"),
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -122,7 +121,6 @@ const registry = Object.freeze([
     usagePolicyUrl: "https://docs.versatiles.org/guides/use_tiles_versatiles_org",
     variant: "gray",
     coverage: "world",
-    previewUrl: assetUrl("../basemap_preview/VersaTiles_Graybeard.png"),
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -157,7 +155,6 @@ const registry = Object.freeze([
     variant: "colorful",
     coverage: "world",
     defaultView: WINTERTHUR_PREVIEW_VIEW,
-    previewUrl: assetUrl("../basemap_preview/Basemap_World.png"),
     lastVerifiedAt: VERIFIED_AT,
   },
   {
@@ -172,7 +169,6 @@ const registry = Object.freeze([
     countries: ["CH", "LI"],
     bounds: [5.95, 45.73, 10.65, 47.95],
     defaultView: WINTERTHUR_PREVIEW_VIEW,
-    previewUrl: assetUrl("../basemap_preview/Swisstopo_Basemap.png"),
     lastVerifiedAt: VERIFIED_AT,
   },
   {
