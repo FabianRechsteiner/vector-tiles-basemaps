@@ -40,6 +40,9 @@ expectAssignable<IControl>(new BasemapControl({
 
 expectAssignable<BasemapControlOptions>({
   filters: { sourceType: ["vector", "raster"], provider: "custom" },
+  onPreview(basemap) {
+    expectType<BasemapDefinition | null>(basemap);
+  },
   applyOptions: {
     captureOverlays() {
       return { overlays: true };

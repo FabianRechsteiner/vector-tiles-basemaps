@@ -13,6 +13,7 @@ const fixtureRegistry = createBasemapRegistry(fixtureBasemaps, {
 
 function mountControl(options: {
   onBasemapChange?: (event: BasemapChangeEvent) => void;
+  onPreview?: (basemap: Parameters<NonNullable<import("../src/index.js").BasemapControlOptions["onPreview"]>>[0]) => void;
 } = {}) {
   const map = new MockMap();
   document.body.appendChild(map.container);
@@ -21,6 +22,7 @@ function mountControl(options: {
     basemapIds: ["fixture.vector", "fixture.raster"],
     initialBasemapId: "fixture.vector",
     onBasemapChange: options.onBasemapChange,
+    onPreview: options.onPreview,
   });
   const element = control.onAdd(map.asMap());
   map.container.appendChild(element);
@@ -105,6 +107,30 @@ describe("BasemapControl", () => {
       basemap: expect.objectContaining({ id: "fixture.raster" }),
       previousBasemap: expect.objectContaining({ id: "fixture.vector" }),
     }));
+
+    control.onRemove();
+  });
+
+  it("previews on hover and restores the active basemap on pointer leave", async () => {
+    const onPreview = vi.fn();
+    const { control, element, map } = mountControl({ onPreview });
+    const toggle = element.querySelector<HTMLButtonElement>(".vtb-toggle");
+    toggle?.click();
+
+    const rasterButton = [...element.querySelectorAll<HTMLButtonElement>(".vtb-button")][1];
+    rasterButton?.dispatchEvent(new Event("pointerenter", { bubbles: true }));
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(map.styleCalls).toHaveLength(1);
+    expect(onPreview).toHaveBeenCalledWith(expect.objectContaining({ id: "fixture.raster" }));
+    expect(element.querySelector<HTMLElement>('.vtb-button[data-previewed="true"]')).toBeTruthy();
+
+    const panel = element.querySelector<HTMLElement>(".vtb-panel");
+    panel?.dispatchEvent(new Event("pointerleave", { bubbles: true }));
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(map.styleCalls).toHaveLength(2);
+    expect(onPreview).toHaveBeenLastCalledWith(expect.objectContaining({ id: "fixture.vector" }));
 
     control.onRemove();
   });

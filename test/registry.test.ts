@@ -3,6 +3,7 @@ import {
   basemapGroups,
   createBasemapRegistry,
   getBasemap,
+  getBasemapPreviewCandidates,
   listBasemaps,
   providerRegistry,
 } from "../src/index.js";
@@ -49,5 +50,12 @@ describe("basemap registry", () => {
 
     expect(first).not.toBe(second);
     expect(first?.rasterFallback?.tiles).not.toBe(second?.rasterFallback?.tiles);
+  });
+
+  it("prefers local preview assets before remote preview URLs", () => {
+    const previews = getBasemapPreviewCandidates("vectormap.light");
+
+    expect(previews[0]).toMatch(/preview-generator\/generated\/vectormap\.light\.png$/);
+    expect(previews[1]).toMatch(/^https:\/\/raw\.githubusercontent\.com\//);
   });
 });

@@ -104,8 +104,10 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
   private buttonOrder: HTMLButtonElement[] = [];
   private items: BasemapDefinition[] = [];
   private activeBasemapId: string | null;
+  private previewBasemapId: string | null = null;
   private focusIndex = 0;
   private isOpen = false;
+  private applySequence = 0;
   private documentPointerHandler: ((event: PointerEvent) => void) | null = null;
   private documentKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
 
@@ -152,6 +154,7 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
     this.panel.setAttribute("role", "radiogroup");
     this.panel.setAttribute("aria-label", this.options.label ?? "Basemaps");
     this.panel.addEventListener("keydown", (event) => this.handlePanelKeydown(event));
+    this.panel.addEventListener("pointerleave", () => this.restoreActiveBasemapPreview());
     this.container.appendChild(this.panel);
 
     this.documentPointerHandler = (event) => {
@@ -202,6 +205,8 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
     this.documentPointerHandler = null;
     this.documentKeydownHandler = null;
     this.isOpen = false;
+    this.previewBasemapId = null;
+    this.applySequence = 0;
   }
 
   setActiveBasemap(id: string): void {
@@ -219,7 +224,8 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
       return;
     }
 
-    const activeDefinition = this.items.find((item) => item.id === this.activeBasemapId) ?? this.items[0];
+    const visibleBasemapId = this.previewBasemapId ?? this.activeBasemapId;
+    const activeDefinition = this.items.find((item) => item.id === visibleBasemapId) ?? this.items[0];
 
     this.activeButton.replaceChildren();
 
@@ -246,9 +252,9 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
     const group = this.documentRef.createElement("span");
     group.className = "vtb-toggle-group";
     group.textContent = labelForGroup(
-      activeDefinition[this.options.groupBy ?? "group"],
+      activeDefinition[this.options.groupBy ?? "variant"],
       this.options.registry ?? defaultBasemapRegistry,
-      this.options.groupBy ?? "group",
+      this.options.groupBy ?? "variant",
     );
     meta.appendChild(group);
 
@@ -257,7 +263,7 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
     const caret = this.documentRef.createElement("span");
     caret.className = "vtb-toggle-caret";
     caret.setAttribute("aria-hidden", "true");
-    caret.textContent = "v";
+    caret.textContent = "▾";
     this.activeButton.appendChild(caret);
   }
 
@@ -272,7 +278,7 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
     this.buttons.clear();
     this.buttonOrder = [];
 
-    const groupBy = this.options.groupBy ?? "group";
+    const groupBy = this.options.groupBy ?? "variant";
     const grouped = new Map<string, BasemapDefinition[]>();
 
     for (const definition of this.items) {
@@ -297,6 +303,7 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
       for (const definition of definitions) {
         const button = this.documentRef.createElement("button");
         const isSelected = definition.id === this.activeBasemapId;
+        const isPreviewed = definition.id === this.previewBasemapId;
 
         button.type = "button";
         button.className = "vtb-button";
@@ -306,10 +313,19 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
         button.setAttribute("aria-checked", String(isSelected));
         button.tabIndex = this.buttonOrder.length === this.focusIndex ? 0 : -1;
         button.dataset.selected = String(isSelected);
+        button.dataset.previewed = String(isPreviewed);
         button.appendChild(createPreviewElement(this.documentRef, definition));
 
+        button.addEventListener("pointerenter", () => {
+          this.previewBasemap(definition.id);
+        });
+
+        button.addEventListener("focus", () => {
+          this.previewBasemap(definition.id, { restoreFocus: true });
+        });
+
         button.addEventListener("click", () => {
-          void this.applyBasemapId(definition.id);
+          void this.applyBasemapId(definition.id, { commit: true });
         });
 
         this.buttons.set(definition.id, button);
@@ -397,12 +413,20 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
     }
   }
 
-  private async applyBasemapId(id: string): Promise<void> {
+  private async applyBasemapId(
+    id: string,
+    options: {
+      commit?: boolean;
+      restoreFocus?: boolean;
+    } = {},
+  ): Promise<void> {
     if (!this.map) {
       return;
     }
 
-    const previousBasemapId = this.activeBasemapId ?? undefined;
+    const { commit = false, restoreFocus = false } = options;
+    const sequence = ++this.applySequence;
+    const previousBasemapId = this.previewBasemapId ?? this.activeBasemapId ?? undefined;
     const previousBasemap = previousBasemapId
       ? getBasemap(previousBasemapId, this.options.registry)
       : null;
@@ -411,7 +435,9 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
       this.options.onBasemapError?.(event);
     };
 
-    this.setButtonsDisabled(true);
+    if (commit) {
+      this.setButtonsDisabled(true);
+    }
 
     try {
       const result = await applyBasemap(this.map, id, {
@@ -421,26 +447,89 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
         onBasemapError,
       });
 
-      this.activeBasemapId = id;
-      this.setPanelOpen(false);
-      this.options.onBasemapChange?.({
-        map: this.map,
-        basemap: result.basemap,
-        previousBasemap,
-        style: result.style,
-      });
-      this.options.onChange?.(result.basemap);
+      if (sequence !== this.applySequence) {
+        return;
+      }
+
+      if (commit) {
+        this.previewBasemapId = null;
+        this.activeBasemapId = id;
+        this.options.onBasemapChange?.({
+          map: this.map,
+          basemap: result.basemap,
+          previousBasemap,
+          style: result.style,
+        });
+        this.options.onChange?.(result.basemap);
+        this.setPanelOpen(false, { restorePreview: false });
+      } else {
+        this.previewBasemapId = id;
+        this.options.onPreview?.(result.basemap);
+      }
+
       this.render();
+
+      if (restoreFocus && this.isOpen) {
+        const schedule = this.documentRef?.defaultView?.requestAnimationFrame ?? ((callback: FrameRequestCallback) => {
+          return globalThis.setTimeout(() => callback(0), 0);
+        });
+        schedule(() => {
+          this.buttons.get(id)?.focus();
+        });
+      }
     } finally {
-      this.setButtonsDisabled(false);
+      if (commit) {
+        this.setButtonsDisabled(false);
+      }
     }
+  }
+
+  private previewBasemap(id: string, options: { restoreFocus?: boolean } = {}): void {
+    if (!this.isOpen) {
+      return;
+    }
+
+    if (id === this.previewBasemapId) {
+      return;
+    }
+
+    if (id === this.activeBasemapId && this.previewBasemapId == null) {
+      return;
+    }
+
+    void this.applyBasemapId(id, { restoreFocus: options.restoreFocus });
+  }
+
+  private restoreActiveBasemapPreview(): void {
+    if (!this.activeBasemapId) {
+      this.previewBasemapId = null;
+      this.options.onPreview?.(null);
+      this.render();
+      return;
+    }
+
+    if (!this.previewBasemapId || this.previewBasemapId === this.activeBasemapId) {
+      this.previewBasemapId = null;
+      this.options.onPreview?.(getBasemap(this.activeBasemapId, this.options.registry));
+      this.render();
+      return;
+    }
+
+    const activeBasemapId = this.activeBasemapId;
+    this.previewBasemapId = null;
+    this.options.onPreview?.(getBasemap(activeBasemapId, this.options.registry));
+    void this.applyBasemapId(activeBasemapId);
   }
 
   private togglePanel(): void {
     this.setPanelOpen(!this.isOpen);
   }
 
-  private setPanelOpen(open: boolean): void {
+  private setPanelOpen(open: boolean, options: { restorePreview?: boolean } = {}): void {
+    if (!open && options.restorePreview !== false) {
+      this.restoreActiveBasemapPreview();
+    }
+
     this.isOpen = open;
 
     if (!this.container || !this.panel || !this.activeButton) {

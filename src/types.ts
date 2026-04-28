@@ -167,6 +167,7 @@ export interface BasemapControlOptions<TSnapshot = unknown> {
   onBasemapChange?: (event: BasemapChangeEvent) => void;
   /** @deprecated Use `onBasemapChange` instead. */
   onChange?: (basemap: BasemapDefinition) => void;
+  onPreview?: (basemap: BasemapDefinition | null) => void;
   onBasemapError?: (event: BasemapErrorEvent) => void;
 }
 

@@ -21,6 +21,14 @@ const WINTERTHUR_PREVIEW_VIEW: Readonly<BasemapView> = Object.freeze({
 const GENERATED_PREVIEW_BASE_URL =
   "https://raw.githubusercontent.com/FabianRechsteiner/vector-tiles-basemaps/master/preview-generator/generated";
 
+function assetUrl(relativePath: string): string {
+  return new URL(relativePath, import.meta.url).href;
+}
+
+function generatedPreviewUrl(id: string): string {
+  return assetUrl(`../preview-generator/generated/${id}.png`);
+}
+
 const previewUrls: Record<string, string> = Object.fromEntries(
   [
     "basemapworld.color",
@@ -574,7 +582,10 @@ export function getBasemapPreviewCandidates(idOrDefinition: string | BasemapDefi
     return [];
   }
 
-  return [...new Set([definition.previewUrl].filter(Boolean) as string[])];
+  return [...new Set([
+    generatedPreviewUrl(definition.id),
+    definition.previewUrl,
+  ].filter(Boolean) as string[])];
 }
 
 export function getBasemapPreviewView(idOrDefinition: string | BasemapDefinition): BasemapView {
