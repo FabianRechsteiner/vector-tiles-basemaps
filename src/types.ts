@@ -158,6 +158,8 @@ export interface BasemapControlOptions<TSnapshot = unknown> {
   filters?: BasemapRegistryFilters;
   registry?: BasemapRegistry;
   initialBasemapId?: string;
+  position?: ControlPosition;
+  /** @deprecated Use `position` instead. */
   defaultPosition?: ControlPosition;
   groupBy?: "group" | "provider" | "variant" | "sourceType";
   label?: string;

@@ -29,6 +29,15 @@ app.innerHTML = `
       <section class="demo-panel">
         <h2>Current basemap</h2>
         <dl class="demo-meta" id="basemapMeta"></dl>
+        <label class="demo-field">
+          <span>Control position</span>
+          <select id="controlPosition">
+            <option value="bottom-left" selected>bottom-left</option>
+            <option value="bottom-right">bottom-right</option>
+            <option value="top-left">top-left</option>
+            <option value="top-right">top-right</option>
+          </select>
+        </label>
         <div class="demo-actions">
           <button type="button" data-basemap="vectormap.light">Vectormap</button>
           <button type="button" data-basemap="openfreemap.dark">OpenFreeMap Dark</button>
@@ -39,8 +48,9 @@ app.innerHTML = `
       <pre class="demo-code"><code>map.addControl(new BasemapControl({
   basemapIds,
   initialBasemapId,
+  position: "bottom-left",
   onBasemapChange
-}), "top-right");</code></pre>
+}));</code></pre>
     </aside>
     <main class="demo-map-shell">
       <div id="map"></div>
@@ -60,6 +70,7 @@ const basemapIds = [
   "carto.light.raster",
 ];
 const metaTarget = document.querySelector<HTMLElement>("#basemapMeta");
+const positionSelect = document.querySelector<HTMLSelectElement>("#controlPosition");
 
 registerPmtilesProtocol(maplibregl, pmtiles);
 
@@ -126,20 +137,36 @@ await applyBasemap(map, defaultBasemapId, {
   repositionIfOutsideCoverage: true,
 });
 
-const basemapControl = new BasemapControl({
-  basemapIds: listBasemaps({ ids: basemapIds }).map((definition) => definition.id),
-  initialBasemapId: defaultBasemapId,
-  groupBy: "provider",
-  applyOptions: {
-    repositionIfOutsideCoverage: true,
-  },
-  onBasemapChange,
-  onBasemapError: (event) => {
-    console.error(`Could not apply ${event.basemapId}`, event.error);
-  },
-});
+let basemapControl: BasemapControl;
 
-map.addControl(basemapControl, "top-right");
+function mountBasemapControl(position: "top-left" | "top-right" | "bottom-left" | "bottom-right"): void {
+  if (basemapControl) {
+    map.removeControl(basemapControl);
+  }
+
+  basemapControl = new BasemapControl({
+    basemapIds: listBasemaps({ ids: basemapIds }).map((definition) => definition.id),
+    initialBasemapId: currentBasemapId,
+    groupBy: "provider",
+    position,
+    applyOptions: {
+      repositionIfOutsideCoverage: true,
+    },
+    onBasemapChange,
+    onBasemapError: (event) => {
+      console.error(`Could not apply ${event.basemapId}`, event.error);
+    },
+  });
+
+  map.addControl(basemapControl);
+}
+
+mountBasemapControl("bottom-left");
+
+positionSelect?.addEventListener("change", () => {
+  const position = positionSelect.value as "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  mountBasemapControl(position);
+});
 
 document.querySelectorAll<HTMLButtonElement>("[data-basemap]").forEach((button) => {
   button.addEventListener("click", async () => {

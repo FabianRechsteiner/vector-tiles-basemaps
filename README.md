@@ -1,41 +1,42 @@
 # vector-tiles-basemaps
 
-Typed MapLibre GL JS basemap control for modern vector style URLs, provider registries, PMTiles-ready styles, and raster fallback examples.
+MapLibre GL JS basemap control for modern vector style URLs, provider registries, PMTiles-ready styles, and raster fallback examples.
 
-`ka7eh/maplibre-gl-basemaps` is useful for raster tile switching. This package targets the newer MapLibre style workflow: full style documents, vector tile basemaps, provider metadata, TypeScript types, accessibility, and a control that implements MapLibre's `IControl` pattern.
+This package is meant to feel like a native MapLibre control:
 
-## Features
+- `BasemapControl` implements the MapLibre `IControl` pattern
+- it can be added with `map.addControl(...)`
+- the control position can be chosen by the integrator
+- vector style URLs are first-class
+- it works in TypeScript projects and also in plain browser HTML via direct `import`
 
-- MapLibre-compatible `BasemapControl` for `map.addControl(new BasemapControl(...), "top-right")`
-- TypeScript-first API with generated `.d.ts`
-- ESM package with exported `vector-tiles-basemaps/style.css`
-- Curated provider registry for vector styles plus one raster comparison basemap
-- Style URL and inline `StyleSpecification` support
-- Optional PMTiles protocol helper without a hard PMTiles dependency
-- Camera-preserving style switching with opt-in overlay capture/restore hooks
-- Accessible expand/collapse UI with thumbnail previews and keyboard navigation
+## Why this instead of `maplibre-gl-basemaps`?
 
-## Installation
+`ka7eh/maplibre-gl-basemaps` is aimed at raster basemap switching.
+
+`vector-tiles-basemaps` adds the parts that matter for modern MapLibre work:
+
+- vector style URLs and full `StyleSpecification` support
+- typed basemap and provider registry
+- MapLibre-style `IControl` integration
+- optional PMTiles protocol support
+- accessibility and keyboard navigation
+- browser import usage without requiring a bundler in the consumer page
+
+## Use It 3 Ways
+
+### 1. npm + bundler
+
+Use this in Vite, Webpack, Rollup, Astro, React, Vue, Svelte, or similar setups.
 
 ```bash
 npm install vector-tiles-basemaps maplibre-gl
 ```
 
-For PMTiles-backed styles, install `pmtiles` in your app:
-
-```bash
-npm install pmtiles
-```
-
-## Minimal MapLibre Example
-
 ```ts
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import {
-  BasemapControl,
-  applyBasemap,
-} from "vector-tiles-basemaps";
+import { BasemapControl, applyBasemap } from "vector-tiles-basemaps";
 import "vector-tiles-basemaps/style.css";
 
 const map = new maplibregl.Map({
@@ -49,28 +50,71 @@ await applyBasemap(map, "openfreemap.liberty");
 
 map.addControl(
   new BasemapControl({
-    basemapIds: [
-      "openfreemap.liberty",
-      "openfreemap.dark",
-      "versatiles.graybeard",
-      "vectormap.light",
-      "carto.light.raster",
-    ],
-    initialBasemapId: "openfreemap.liberty",
-    onBasemapChange(event) {
-      console.log("Basemap changed", event.basemap.id);
-    },
+    basemapIds: ["openfreemap.liberty", "openfreemap.dark", "versatiles.graybeard"],
+    position: "bottom-left",
   }),
-  "top-right",
 );
 ```
 
-## Public API
+### 2. Direct browser import from local files
+
+Use this when you already have the built `dist/` files and want to drop the control into a plain HTML page.
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+    <link rel="stylesheet" href="./dist/style.css">
+    <style>
+      html, body, #map { height: 100%; margin: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script type="module">
+      import maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/+esm";
+      import { BasemapControl, applyBasemap } from "./dist/index.js";
+
+      const map = new maplibregl.Map({
+        container: "map",
+        style: { version: 8, sources: {}, layers: [] },
+        center: [8.7241, 47.4988],
+        zoom: 10.8,
+      });
+
+      await applyBasemap(map, "openfreemap.liberty");
+      map.addControl(new BasemapControl({ position: "bottom-left" }));
+    </script>
+  </body>
+</html>
+```
+
+### 3. Direct browser import from a CDN
+
+Use this after the package is published and you want zero local package installation in the consuming app.
+
+```html
+<script type="module">
+  import maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/+esm";
+  import {
+    BasemapControl,
+    applyBasemap
+  } from "https://cdn.jsdelivr.net/npm/vector-tiles-basemaps/dist/index.js";
+
+  import "https://cdn.jsdelivr.net/npm/vector-tiles-basemaps/dist/style.css";
+</script>
+```
+
+If your target environment does not support CSS `import` in modules, use a normal `<link rel="stylesheet">` for `dist/style.css`.
+
+## Minimal API
 
 ```ts
 import {
   BasemapControl,
-  createBasemapControl,
   applyBasemap,
   loadBasemapStyle,
   resolveBasemapStyle,
@@ -84,54 +128,86 @@ import {
 } from "vector-tiles-basemaps";
 ```
 
-Primary exported types:
+## Positioning The Control
 
-- `BasemapDefinition`
-- `BasemapProvider`
-- `BasemapGroup`
-- `BasemapControlOptions`
-- `BasemapChangeEvent`
-- `BasemapErrorEvent`
-- `BasemapRegistryFilters`
-- `CaptureOverlaysCallback`
-- `RestoreOverlaysCallback`
+There are two normal MapLibre-style ways to choose where the control appears.
 
-## BasemapDefinition
+### Option A: use `position` on the control
 
 ```ts
-type BasemapDefinition = {
-  id: string;
-  name: string;
-  provider: string;
-  group: string;
-  style: string | StyleSpecification;
-  styleUrl?: string; // deprecated compatibility alias
-  variant: "light" | "dark" | "relief" | "imagery" | "colorful" | "gray" | "white" | "black";
-  coverage: "world" | "country" | "region";
-  sourceType: "vector" | "raster" | "hybrid";
-  attributionHtml?: string;
-  license?: string;
-  previewUrl?: string;
-  rasterFallback?: { tiles: readonly string[]; tileSize?: number };
-  protocols?: readonly "pmtiles"[];
-};
+map.addControl(
+  new BasemapControl({
+    position: "bottom-left",
+  }),
+);
 ```
 
-`style` is the canonical field. It may be a MapLibre style URL or a `StyleSpecification` object. `styleUrl` is kept only as a transition alias.
-
-## Registry And Filtering
+### Option B: use the standard MapLibre `addControl` position argument
 
 ```ts
-const vectorMaps = listBasemaps({ sourceType: "vector" });
-const swissMaps = listBasemaps({ country: "CH" });
-const selected = listBasemaps({
-  ids: ["vectormap.light", "openfreemap.dark", "carto.light.raster"],
+map.addControl(
+  new BasemapControl(),
+  "bottom-left",
+);
+```
+
+If both are provided, the explicit `map.addControl(control, position)` argument is the MapLibre-native choice and should be preferred by integrators.
+
+## BasemapControl
+
+`BasemapControl` is the main UI control.
+
+```ts
+const control = new BasemapControl({
+  basemapIds: [
+    "openfreemap.liberty",
+    "openfreemap.dark",
+    "versatiles.graybeard",
+    "carto.light.raster",
+  ],
+  initialBasemapId: "openfreemap.liberty",
+  groupBy: "provider",
+  position: "bottom-left",
+  onBasemapChange(event) {
+    console.log(event.basemap.id);
+  },
+  onBasemapError(event) {
+    console.error(event.basemapId, event.error);
+  },
+});
+
+map.addControl(control);
+```
+
+Important options:
+
+- `basemapIds`: limit the control to specific basemaps
+- `filters`: filter the default registry
+- `registry`: inject your own basemap registry
+- `position`: default MapLibre control position
+- `initialBasemapId`: selected basemap at control creation
+- `groupBy`: `"group" | "provider" | "variant" | "sourceType"`
+- `onBasemapChange`: called after a successful basemap switch
+- `onBasemapError`: called when loading or applying a basemap fails
+
+## Applying A Basemap Without The Control
+
+If you only want the switching logic and not the UI:
+
+```ts
+await applyBasemap(map, "openfreemap.dark", {
+  preserveView: true,
+  repositionIfOutsideCoverage: true,
 });
 ```
 
-Custom registries are first-class:
+This loads and validates the target style before calling `map.setStyle`, so a broken style does not wipe the current map first.
+
+## Using Your Own Basemaps
 
 ```ts
+import { createBasemapRegistry, BasemapControl, applyBasemap } from "vector-tiles-basemaps";
+
 const registry = createBasemapRegistry([
   {
     id: "custom.light",
@@ -145,42 +221,13 @@ const registry = createBasemapRegistry([
   },
 ]);
 
-map.addControl(new BasemapControl({ registry }), "top-right");
-```
-
-## Style Switching
-
-`applyBasemap` loads and validates the target style before calling `map.setStyle`, so a failed fetch does not wipe the current map. The current camera is preserved by default.
-
-```ts
-await applyBasemap(map, "openfreemap.dark", {
-  preserveView: true,
-  repositionIfOutsideCoverage: true,
-  onBasemapError(event) {
-    console.error(event.basemapId, event.error);
-  },
-});
-```
-
-Overlay preservation is opt-in because applications differ in how overlays are owned:
-
-```ts
-await applyBasemap(map, "versatiles.graybeard", {
-  captureOverlays({ map }) {
-    return {
-      sources: map.getStyle().sources,
-      layers: map.getStyle().layers.filter((layer) => layer.id.startsWith("app-")),
-    };
-  },
-  restoreOverlays(snapshot, { map }) {
-    // Re-add application-owned sources and layers after style.load.
-  },
-});
+await applyBasemap(map, "custom.light", { registry });
+map.addControl(new BasemapControl({ registry, position: "bottom-left" }));
 ```
 
 ## PMTiles
 
-The package does not install or register PMTiles globally. Register it explicitly when your styles use `pmtiles://` sources:
+The package does not auto-register PMTiles globally. Register it explicitly when one of your basemaps uses `pmtiles://`.
 
 ```ts
 import maplibregl from "maplibre-gl";
@@ -188,43 +235,58 @@ import * as pmtiles from "pmtiles";
 import { registerPmtilesProtocol } from "vector-tiles-basemaps";
 
 const unregisterPmtiles = registerPmtilesProtocol(maplibregl, pmtiles);
-
-// Later, during app teardown if desired:
-unregisterPmtiles();
 ```
 
 ## Styling
 
-Import the CSS bundle once:
+Import the CSS once:
 
 ```ts
 import "vector-tiles-basemaps/style.css";
 ```
 
-The root control element uses:
+The control root is:
 
 ```html
 <div class="maplibregl-ctrl maplibregl-ctrl-group vtb-basemap-control">
 ```
 
-Override CSS custom properties on `.vtb-basemap-control` to align with your app theme.
+That keeps it aligned with MapLibre's control model and styling conventions.
 
 ## Accessibility
 
-The control uses a real button for expand/collapse, a `radiogroup` for choices, `aria-expanded`, `aria-controls`, `aria-checked`, visible focus states, `Escape`, arrow-key roving focus, `Home`, and `End`.
+The control includes:
+
+- `aria-expanded`
+- `aria-controls`
+- `role="radiogroup"`
+- `aria-checked`
+- keyboard support for `Escape`, arrow keys, `Home`, and `End`
 
 ## Included Providers
 
-The default registry includes vector styles from vectormap, OpenFreeMap, VersaTiles, basemap.world, and swisstopo, plus a CARTO raster basemap for comparison and fallback workflows. Check each provider's usage policy and attribution terms before production use.
+The default registry currently includes vector styles from:
+
+- `vectormap`
+- `OpenFreeMap`
+- `VersaTiles`
+- `basemap.world`
+- `swisstopo`
+
+It also includes one raster comparison basemap:
+
+- `carto.light.raster`
 
 ## Demo
+
+The top-level [`index.html`](C:\Users\fabia\GitHub\vector-tiles-basemaps\index.html) is now the standalone browser demo. It imports the built files from `./dist/` directly and is the simplest reference for plain HTML usage.
+
+The Vite demo still exists for development:
 
 ```bash
 npm install
 npm run demo:dev
 ```
-
-The demo imports the package API and `vector-tiles-basemaps/style.css` through Vite aliases, matching consumer import paths.
 
 ## Development
 
@@ -236,18 +298,8 @@ npm run test:types
 npm run build
 ```
 
-Live provider style validation is available but network-dependent:
+Live provider validation:
 
 ```bash
 npm run validate:styles
-```
-
-## Release
-
-Changesets are configured for release management:
-
-```bash
-npm run changeset
-npm run build
-npm run release
 ```

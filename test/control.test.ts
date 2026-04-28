@@ -41,6 +41,15 @@ describe("BasemapControl", () => {
     control.onRemove();
   });
 
+  it("supports a configured default position", () => {
+    const control = new BasemapControl({
+      registry: fixtureRegistry,
+      position: "bottom-left",
+    });
+
+    expect(control.getDefaultPosition()).toBe("bottom-left");
+  });
+
   it("expands, marks active basemap, and exposes ARIA radio state", () => {
     const { control, element } = mountControl();
     const toggle = element.querySelector<HTMLButtonElement>(".vtb-toggle");

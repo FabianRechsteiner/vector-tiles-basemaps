@@ -80,6 +80,19 @@ body {
   gap: 8px;
 }
 
+.demo-field {
+  display: grid;
+  gap: 6px;
+}
+
+.demo-field span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .demo-actions button {
   appearance: none;
   background: #fff;
@@ -94,8 +107,20 @@ body {
   padding: 6px 9px;
 }
 
+.demo-field select {
+  appearance: none;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
 .demo-actions button:hover,
-.demo-actions button:focus-visible {
+.demo-actions button:focus-visible,
+.demo-field select:focus-visible {
   border-color: var(--accent);
   outline: none;
 }

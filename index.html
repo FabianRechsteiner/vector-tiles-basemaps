@@ -3,10 +3,340 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>vector-tiles-basemaps demo</title>
+    <title>vector-tiles-basemaps standalone demo</title>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+    <link rel="stylesheet" href="./dist/style.css">
+    <style>
+      :root {
+        color-scheme: light;
+        --page-bg: linear-gradient(180deg, #dde6df 0%, #f6f2e9 100%);
+        --panel-bg: rgba(247, 243, 236, 0.94);
+        --panel-border: rgba(90, 85, 74, 0.16);
+        --panel-shadow: 0 18px 44px rgba(34, 34, 28, 0.16);
+        --text-main: #22211b;
+        --text-muted: #625d52;
+        --accent: #235e57;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        background: var(--page-bg);
+        color: var(--text-main);
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      #map {
+        height: 100%;
+        width: 100%;
+      }
+
+      .demo-panel {
+        backdrop-filter: blur(10px);
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 12px;
+        box-shadow: var(--panel-shadow);
+        left: 18px;
+        max-width: 360px;
+        padding: 18px;
+        position: absolute;
+        top: 18px;
+        width: calc(100% - 36px);
+        z-index: 2;
+      }
+
+      .demo-title {
+        display: grid;
+        gap: 7px;
+        margin: 0 0 14px;
+      }
+
+      .demo-title h1 {
+        font-size: 1.4rem;
+        line-height: 1.05;
+        margin: 0;
+      }
+
+      .demo-title p,
+      .demo-note {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        line-height: 1.45;
+        margin: 0;
+      }
+
+      .demo-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .demo-section {
+        display: grid;
+        gap: 8px;
+      }
+
+      .demo-label {
+        color: var(--text-muted);
+        font-family: "Segoe UI", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .demo-meta {
+        display: grid;
+        gap: 7px;
+        margin: 0;
+      }
+
+      .demo-meta div {
+        display: grid;
+        gap: 2px;
+      }
+
+      .demo-meta dt {
+        color: var(--text-muted);
+        font-family: "Segoe UI", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .demo-meta dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .demo-controls {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .demo-controls button,
+      .demo-controls select {
+        appearance: none;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        color: var(--text-main);
+        font: 600 0.88rem/1.2 "Segoe UI", sans-serif;
+        min-height: 38px;
+        padding: 7px 10px;
+      }
+
+      .demo-controls button {
+        cursor: pointer;
+      }
+
+      .demo-controls button:hover,
+      .demo-controls button:focus-visible,
+      .demo-controls select:focus-visible {
+        border-color: var(--accent);
+        outline: none;
+      }
+
+      .demo-code {
+        background: #22211b;
+        border-radius: 10px;
+        color: #f5efe3;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.78rem;
+        line-height: 1.45;
+        margin: 0;
+        overflow: auto;
+        padding: 12px;
+        white-space: pre-wrap;
+      }
+
+      @media (max-width: 720px) {
+        .demo-panel {
+          max-width: none;
+          top: 12px;
+          left: 12px;
+          width: calc(100% - 24px);
+        }
+
+        .demo-controls {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/demo/main.ts"></script>
+    <div id="map"></div>
+    <section class="demo-panel">
+      <div class="demo-title">
+        <h1>vector-tiles-basemaps</h1>
+        <p>Standalone browser demo with direct ESM imports. No bundler, no package install in the consumer page.</p>
+      </div>
+      <div class="demo-grid">
+        <div class="demo-section">
+          <span class="demo-label">Control</span>
+          <div class="demo-controls">
+            <select id="controlPosition" aria-label="Basemap control position">
+              <option value="bottom-left" selected>bottom-left</option>
+              <option value="bottom-right">bottom-right</option>
+              <option value="top-left">top-left</option>
+              <option value="top-right">top-right</option>
+            </select>
+            <button type="button" data-basemap="openfreemap.liberty">OpenFreeMap</button>
+            <button type="button" data-basemap="openfreemap.dark">Dark</button>
+            <button type="button" data-basemap="versatiles.graybeard">Graybeard</button>
+            <button type="button" data-basemap="carto.light.raster">Raster</button>
+          </div>
+        </div>
+        <div class="demo-section">
+          <span class="demo-label">Current Basemap</span>
+          <dl class="demo-meta" id="basemapMeta"></dl>
+        </div>
+        <div class="demo-section">
+          <span class="demo-label">Direct Import</span>
+          <pre class="demo-code">import { BasemapControl, applyBasemap } from "./dist/index.js";
+map.addControl(new BasemapControl({ position: "bottom-left" }));</pre>
+        </div>
+        <p class="demo-note">This page imports `./dist/index.js` directly. It is the reference shape for using the library in plain browser HTML.</p>
+      </div>
+    </section>
+
+    <script type="module">
+      import maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/+esm";
+      import * as pmtiles from "https://cdn.jsdelivr.net/npm/pmtiles@4.4.1/+esm";
+      import {
+        BasemapControl,
+        applyBasemap,
+        getBasemap,
+        listBasemaps,
+        registerPmtilesProtocol,
+      } from "./dist/index.js";
+
+      const defaultBasemapId = "openfreemap.liberty";
+      const supportedBasemaps = [
+        "openfreemap.liberty",
+        "openfreemap.dark",
+        "versatiles.graybeard",
+        "vectormap.light",
+        "carto.light.raster",
+      ];
+      const metaTarget = document.querySelector("#basemapMeta");
+      const positionSelect = document.querySelector("#controlPosition");
+      let currentBasemapId = defaultBasemapId;
+      let basemapControl;
+
+      registerPmtilesProtocol(maplibregl, pmtiles);
+
+      const map = new maplibregl.Map({
+        container: "map",
+        style: {
+          version: 8,
+          sources: {},
+          layers: [
+            {
+              id: "background",
+              type: "background",
+              paint: { "background-color": "#ece7dd" }
+            }
+          ]
+        },
+        center: [8.7241, 47.4988],
+        zoom: 10.8,
+        pitch: 0,
+        bearing: 0,
+      });
+
+      map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+      function renderBasemapMeta(basemap) {
+        if (!metaTarget) {
+          return;
+        }
+
+        const rows = [
+          ["Name", basemap.name],
+          ["ID", basemap.id],
+          ["Provider", basemap.provider],
+          ["Type", basemap.sourceType],
+          ["Coverage", basemap.coverage],
+        ];
+
+        metaTarget.replaceChildren();
+
+        for (const [label, value] of rows) {
+          const wrapper = document.createElement("div");
+          const dt = document.createElement("dt");
+          const dd = document.createElement("dd");
+          dt.textContent = label;
+          dd.textContent = value;
+          wrapper.append(dt, dd);
+          metaTarget.appendChild(wrapper);
+        }
+      }
+
+      function mountBasemapControl(position) {
+        if (basemapControl) {
+          map.removeControl(basemapControl);
+        }
+
+        basemapControl = new BasemapControl({
+          basemapIds: listBasemaps({ ids: supportedBasemaps }).map((definition) => definition.id),
+          initialBasemapId: currentBasemapId,
+          position,
+          groupBy: "provider",
+          applyOptions: {
+            repositionIfOutsideCoverage: true,
+          },
+          onBasemapChange(event) {
+            currentBasemapId = event.basemap.id;
+            renderBasemapMeta(event.basemap);
+          },
+        });
+
+        map.addControl(basemapControl);
+      }
+
+      const initialBasemap = getBasemap(defaultBasemapId);
+      if (initialBasemap) {
+        renderBasemapMeta(initialBasemap);
+      }
+
+      await applyBasemap(map, defaultBasemapId, {
+        repositionIfOutsideCoverage: true,
+      });
+
+      mountBasemapControl("bottom-left");
+
+      positionSelect?.addEventListener("change", () => {
+        mountBasemapControl(positionSelect.value);
+      });
+
+      document.querySelectorAll("[data-basemap]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const basemapId = button.getAttribute("data-basemap");
+          if (!basemapId) {
+            return;
+          }
+
+          const result = await applyBasemap(map, basemapId, {
+            previousBasemapId: currentBasemapId,
+            repositionIfOutsideCoverage: true,
+          });
+
+          currentBasemapId = result.basemap.id;
+          renderBasemapMeta(result.basemap);
+          basemapControl.setActiveBasemap(result.basemap.id);
+        });
+      });
+    </script>
   </body>
 </html>

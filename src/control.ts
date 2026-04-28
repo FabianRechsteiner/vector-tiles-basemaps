@@ -115,7 +115,7 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
   }
 
   getDefaultPosition(): ControlPosition {
-    return this.options.defaultPosition ?? "top-right";
+    return this.options.position ?? this.options.defaultPosition ?? "top-right";
   }
 
   onAdd(map: MapLibreMap): HTMLElement {

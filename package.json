@@ -5,13 +5,19 @@
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
+  "browser": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "style": "./dist/style.css",
+  "unpkg": "./dist/index.js",
+  "jsdelivr": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./style.css": "./dist/style.css",
+    "./dist/index.js": "./dist/index.js",
+    "./dist/style.css": "./dist/style.css",
     "./package.json": "./package.json"
   },
   "files": [

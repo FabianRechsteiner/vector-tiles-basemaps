@@ -31,6 +31,7 @@ const definition: BasemapDefinition = {
 
 expectAssignable<IControl>(new BasemapControl({
   basemapIds: ["custom.light"],
+  position: "bottom-left",
   onBasemapChange(event) {
     expectType<BasemapDefinition>(event.basemap);
     expectType<StyleSpecification>(event.style);
