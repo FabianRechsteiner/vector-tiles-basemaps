@@ -1,28 +1,78 @@
 {
   "name": "vector-tiles-basemaps",
   "version": "0.1.0",
-  "description": "Curated MapLibre basemap registry with public no-key style URLs and an optional picker UI.",
+  "description": "Typed MapLibre GL JS basemap control for vector styles, provider registries, and raster fallbacks.",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
   },
   "files": [
-    "src",
+    "dist",
     "README.md",
     "LICENSE"
   ],
+  "sideEffects": [
+    "./dist/style.css",
+    "./src/style.css"
+  ],
   "scripts": {
-    "generate:previews": "node ./preview-generator/generate-previews.js"
+    "clean": "node -e \"import('node:fs').then(({ rmSync }) => rmSync('dist', { recursive: true, force: true }))\"",
+    "build:types": "tsc -p tsconfig.build.json",
+    "build": "npm run clean && npm run build:types && vite build && node ./scripts/copy-css.mjs",
+    "demo:dev": "vite --config vite.demo.config.ts",
+    "demo:build": "vite build --config vite.demo.config.ts",
+    "lint": "tsc -p tsconfig.json --noEmit && eslint \"src/**/*.ts\" \"demo/**/*.ts\" \"test/**/*.ts\" \"vite*.config.ts\"",
+    "test": "vitest run",
+    "test:types": "npm run build:types && tsd --typings dist/index.d.ts --files \"test-d/**/*.test-d.ts\"",
+    "validate:styles": "npm run build && node ./scripts/validate-styles.mjs",
+    "changeset": "changeset",
+    "release": "changeset publish",
+    "generate:previews": "npm run build && node ./preview-generator/generate-previews.js"
+  },
+  "peerDependencies": {
+    "maplibre-gl": ">=3.0.0 <6.0.0",
+    "pmtiles": ">=3.0.0 || >=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "pmtiles": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "playwright-core": "^1.53.2"
+    "@changesets/cli": "^2.31.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.6.0",
+    "eslint": "^10.2.1",
+    "jsdom": "^29.1.0",
+    "maplibre-gl": "^5.24.0",
+    "playwright-core": "^1.53.2",
+    "pmtiles": "^4.4.1",
+    "tsd": "^0.33.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.1",
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5"
   },
   "keywords": [
     "maplibre",
+    "maplibre-gl",
+    "maplibre-control",
     "basemap",
     "vector-tiles",
+    "vector-basemaps",
+    "pmtiles",
     "maps"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "license": "MIT"
 }

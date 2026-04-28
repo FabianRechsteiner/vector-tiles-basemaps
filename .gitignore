@@ -1,3 +1,6 @@
 node_modules/
-.github
 .vscode
+dist/
+demo-dist/
+coverage/
+.vite-demo.*
