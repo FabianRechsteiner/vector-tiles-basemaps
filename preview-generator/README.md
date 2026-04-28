@@ -1,52 +1,52 @@
 # Preview Generator
 
-Dieses Verzeichnis ist ein optionales Zusatzwerkzeug zum Erzeugen von PNG-Vorschaubildern fuer den Basemap-Switcher.
+This directory contains an optional utility for generating PNG preview images for the basemap switcher.
 
-Die Vorschaubilder werden in `preview-generator/generated/` geschrieben und koennen anschliessend vom Switcher verwendet werden.
+Generated previews are written to `preview-generator/generated/`. The normal library build copies these images to `dist/previews/`, where the static browser API can load them.
 
-## Voraussetzungen
+## Requirements
 
-- `npm install`
+- `npm install` or `npm ci`
 - `npm run build`
-- ein lokaler Chromium-basierter Browser
-  - Edge oder Chrome werden automatisch gesucht
-  - alternativ `PREVIEW_BROWSER_PATH` setzen
+- a local Chromium-based browser
+  - Edge or Chrome are detected automatically
+  - alternatively, set `PREVIEW_BROWSER_PATH`
 
-## Aufruf
-
-```bash
-npm run generate:previews -- --lng=8.7147 --lat=47.4951 --zoom=12
-```
-
-Das npm-Script fuehrt den Library-Build automatisch vor dem Rendern aus, weil der Renderer die gebaute ESM-Library aus `dist/` verwendet.
-
-## Wichtige Parameter
-
-- `--lng=<number>` Mittelpunkt Laengengrad
-- `--lat=<number>` Mittelpunkt Breitengrad
-- `--zoom=<number>` Zoomstufe
-- `--bearing=<number>` optional, Standard `0`
-- `--pitch=<number>` optional, Standard `0`
-- `--width=<number>` optional, Standard `160`
-- `--height=<number>` optional, Standard `160`
-- `--scale=<number>` optional, Standard `2`
-- `--ids=<id1,id2,...>` optional, um nur bestimmte Basemaps zu rendern
-
-## Beispiele
-
-Alle Basemaps fuer Sonnenbergpark Winterthur:
+## Usage
 
 ```bash
 npm run generate:previews -- --lng=8.7147 --lat=47.4951 --zoom=12
 ```
 
-Nur zwei bestimmte Basemaps:
+The npm script runs the library build automatically before rendering because the preview renderer imports the built ESM library from `dist/`.
+
+## Parameters
+
+- `--lng=<number>` center longitude
+- `--lat=<number>` center latitude
+- `--zoom=<number>` zoom level
+- `--bearing=<number>` optional, default `0`
+- `--pitch=<number>` optional, default `0`
+- `--width=<number>` optional, default `160`
+- `--height=<number>` optional, default `160`
+- `--scale=<number>` optional, default `2`
+- `--ids=<id1,id2,...>` optional list of basemap ids to render
+
+## Examples
+
+Render all basemaps for the default Winterthur view:
+
+```bash
+npm run generate:previews -- --lng=8.7147 --lat=47.4951 --zoom=12
+```
+
+Render only two selected basemaps:
 
 ```bash
 npm run generate:previews -- --ids=vectormap.light,openfreemap.dark --lng=8.7147 --lat=47.4951 --zoom=12
 ```
 
-Groessere Vorschaubilder:
+Render larger preview images:
 
 ```bash
 npm run generate:previews -- --lng=8.7147 --lat=47.4951 --zoom=12 --width=220 --height=220 --scale=2
