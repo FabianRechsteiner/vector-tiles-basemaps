@@ -1,124 +1,50 @@
-# AGENT.md - Working Instructions for the Codex Agent
+# AGENT.md - Project Instructions
 
-This repository is maintained with an autonomous coding agent.
+This repository is a TypeScript-first MapLibre GL JS basemap control library.
 
 ## Project Context
 
-- Project name: `vectormap-geogirafe`
-- Goal: create a GitHub-hosted WebGIS frontend for the existing `vectormap.ch` work based as closely as practical on the GeoGirafe upstream project
-- Primary upstream source: GeoGirafe on GitLab
-- Deployment target: GitHub Pages
-- Audience of this repository: internal maintainers
-- Runtime target: frontend only, no own backend
-- Backends and data services may come from external providers
-
-## Core Strategy
-
-- Treat the upstream GeoGirafe project as the baseline and preserve upstream compatibility where practical
-- Prefer an approach that makes future upstream adoption simple and low-risk
-- Repository-specific configuration for the final WebGIS may live here as long as it does not unnecessarily break upstream sync
-- If there is a conflict between "stay close to upstream" and "custom project-specific behavior", the agent must make that tradeoff explicit
+- Package name: `vector-tiles-basemaps`
+- Goal: provide a professional alternative to raster-only basemap switchers by supporting MapLibre style URLs, vector tile basemaps, typed provider registries, optional PMTiles workflows, and accessible control UI.
+- Runtime target: browser applications using MapLibre GL JS.
+- Distribution target: npm package with ESM output, TypeScript declarations, and a CSS bundle.
 
 ## Branch Policy
 
-- All work MUST be done exclusively on the current working branch: `agent`
-- Never modify files on `master` or `main`
-- Never commit to `master`, `main`, or any other branch unless the user explicitly changes the branch policy
-- Do not create additional branches unless the user explicitly asks for it
-- Before making any file change, staging files, or creating a commit, the agent MUST verify the current branch
-- If the current branch is not `agent`, the agent MUST stop and switch back before continuing
-- This repository-specific branch rule overrides default agent habits
+- Work on the current `agent` branch unless the user explicitly requests another branch.
+- Before code changes, verify the current branch.
+- If this file conflicts with a direct user instruction in the active task, ask only when the conflict would make the requested work unsafe.
 
-## Pre-Change Sync Rule
+## Technology
 
-- Before every code change, the agent MUST first update the latest available `master` state without leaving the `agent` branch
-- The agent MUST NOT switch to `master` for this sync workflow
-- The agent MUST fetch or otherwise update the latest `master` reference and merge that `master` state directly into `agent`
-- Only after this sync step is completed may the agent change code in `agent`
-- If the pull or merge cannot be completed cleanly, the agent MUST stop and report the issue before making any code changes
-- The agent must never perform code edits directly on `master` while carrying out this sync rule
-- The user grants standing permission for this repository-specific `master`-into-`agent` sync workflow, so the agent does not need additional confirmation each time it performs the fetch or merge
+- Source lives in `src/**/*.ts`.
+- Build output is `dist/` and is not committed.
+- The package is ESM-only for v1; do not add CJS unless requested.
+- `maplibre-gl` is a peer dependency.
+- `pmtiles` is optional. Do not hard-import it from library code.
+- Export styling through `vector-tiles-basemaps/style.css`; do not inject runtime CSS from JavaScript.
 
-## Upstream Sync Policy
+## MapLibre Requirements
 
-- The agent should structure the repository so that updates from the GitLab GeoGirafe upstream remain easy to apply
-- Prefer simple Git-based sync strategies over manual copy-paste workflows
-- If a direct fork is not technically possible across hosting providers, the agent should use the closest maintainable alternative and document it clearly
-- The agent should avoid unnecessary divergence from upstream file structure unless required for GitHub Pages deployment or project-specific configuration
-- Any sync workflow introduced here must be documented for maintainers in `README.md`
+- `BasemapControl` must implement MapLibre's `IControl` shape: `onAdd(map): HTMLElement`, `onRemove(): void`, and optional `getDefaultPosition()`.
+- The root control element must include `maplibregl-ctrl`.
+- Basemap styles must be MapLibre style specification version 8 documents or URLs resolving to them.
+- Style switching should preload/validate before `map.setStyle`, preserve camera by default, and expose explicit failure callbacks.
+- Overlay preservation must remain opt-in through callbacks.
 
-## Discovery-First Rule
+## Verification
 
-- Before scaffolding substantial project code, the agent MUST clarify the remaining architectural decisions
-- The agent MUST especially clarify:
-  - which exact GitLab repository is the canonical upstream
-  - whether this repository should be a Git mirror, a tracked customization layer, or a deploy-ready distribution repo
-  - how GitHub Pages should publish the app
-  - whether a build step is acceptable if upstream requires one
-  - which external services should be wired in the first usable version
-- Until these points are clear enough, the agent should limit itself to repo setup, documentation, and low-risk structural work
+Run these checks for substantive changes:
 
-## Technology Rules
+```bash
+npm run lint
+npm run test
+npm run test:types
+npm run build
+```
 
-- Prefer no build step if and only if the chosen upstream-compatible setup supports it cleanly
-- If upstream requires TypeScript compilation, bundling, or other build tooling, the agent may use the minimum necessary tooling instead of forcing a buildless setup
-- Do not add a backend to this repository
-- Do not introduce extra frameworks or infrastructure without a concrete need
-- Prefer simple, readable configuration over clever automation
-
-## MapLibre and Mapping Guidance
-
-- For MapLibre-related tasks, load the relevant local skill files before implementation
-- Use task-based skill selection:
-  - `maplibre-tile-sources`: source and layer setup, basemap, labels, blank map debugging
-  - `maplibre-pmtiles-patterns`: PMTiles workflows and static hosting patterns
-  - `maplibre-mapbox-migration`: migration work from Mapbox GL JS to MapLibre GL JS
-- Treat the skill guidance as the primary technical baseline unless the repository clearly requires another approach
-
-## Commit Policy
-
-- The agent MUST commit its own coherent changes
-- Do not leave finished work uncommitted unless the user explicitly asks for that
-- Prefer small, logically grouped commits that keep the repository usable
-- Commits may only be created on `agent`
-
-### Commit Message Rules
-
-- Language: English only
-- Use clear, concise, descriptive messages
-- Prefer imperative mood
-
-Examples:
-- `Add project-specific agent instructions`
-- `Document upstream sync strategy`
-- `Add GitHub Pages deployment baseline`
-- `Import GeoGirafe upstream baseline`
-- `Configure vectormap project defaults`
+`npm run validate:styles` is network-dependent and should not be required for deterministic CI.
 
 ## Documentation
 
-- Maintain a practical `README.md`
-- Document setup, sync workflow, deployment, and project-specific configuration
-- Keep documentation developer-focused because this repository is primarily for internal maintainers
-
-## Definition of Done
-
-Work is considered complete for a given task when:
-
-- The branch policy has been respected
-- The pre-change sync rule has been respected
-- The requested change is implemented coherently
-- Upstream compatibility impact has been considered and made explicit when relevant
-- Documentation is updated where needed
-- The change has been verified as far as the local environment allows
-- The completed work has been committed unless the user asked otherwise
-
-## Expected Behaviour
-
-The agent is expected to:
-
-- ask precise follow-up questions when architectural choices remain open
-- recommend the simplest maintainable sync strategy
-- stay as close to GeoGirafe upstream as practical
-- keep repository customizations intentional and documented
-- implement agreed changes autonomously once the open questions are resolved
+Keep `README.md` npm-consumer focused: installation, minimal MapLibre example, API, custom provider configuration, PMTiles setup, styling, accessibility, and compatibility notes.

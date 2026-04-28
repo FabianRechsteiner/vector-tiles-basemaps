@@ -1,130 +1,253 @@
 # vector-tiles-basemaps
 
-Lightweight MapLibre basemap registry for publicly usable vector tile styles without required API keys.
+Typed MapLibre GL JS basemap control for modern vector style URLs, provider registries, PMTiles-ready styles, and raster fallback examples.
 
-It provides:
+`ka7eh/maplibre-gl-basemaps` is useful for raster tile switching. This package targets the newer MapLibre style workflow: full style documents, vector tile basemaps, provider metadata, TypeScript types, accessibility, and a control that implements MapLibre's `IControl` pattern.
 
-- a curated basemap catalog
-- simple filter helpers
-- a style switch helper for MapLibre
-- an optional compact basemap picker
+## Features
+
+- MapLibre-compatible `BasemapControl` for `map.addControl(new BasemapControl(...), "top-right")`
+- TypeScript-first API with generated `.d.ts`
+- ESM package with exported `vector-tiles-basemaps/style.css`
+- Curated provider registry for vector styles plus one raster comparison basemap
+- Style URL and inline `StyleSpecification` support
+- Optional PMTiles protocol helper without a hard PMTiles dependency
+- Camera-preserving style switching with opt-in overlay capture/restore hooks
+- Accessible expand/collapse UI with thumbnail previews and keyboard navigation
 
 ## Installation
 
 ```bash
-npm install vector-tiles-basemaps
-npm install maplibre-gl
+npm install vector-tiles-basemaps maplibre-gl
+```
+
+For PMTiles-backed styles, install `pmtiles` in your app:
+
+```bash
 npm install pmtiles
 ```
 
-## API
+## Minimal MapLibre Example
 
-```js
+```ts
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import {
+  BasemapControl,
+  applyBasemap,
+} from "vector-tiles-basemaps";
+import "vector-tiles-basemaps/style.css";
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: { version: 8, sources: {}, layers: [] },
+  center: [8.7241, 47.4988],
+  zoom: 10.8,
+});
+
+await applyBasemap(map, "openfreemap.liberty");
+
+map.addControl(
+  new BasemapControl({
+    basemapIds: [
+      "openfreemap.liberty",
+      "openfreemap.dark",
+      "versatiles.graybeard",
+      "vectormap.light",
+      "carto.light.raster",
+    ],
+    initialBasemapId: "openfreemap.liberty",
+    onBasemapChange(event) {
+      console.log("Basemap changed", event.basemap.id);
+    },
+  }),
+  "top-right",
+);
+```
+
+## Public API
+
+```ts
+import {
+  BasemapControl,
+  createBasemapControl,
+  applyBasemap,
+  loadBasemapStyle,
+  resolveBasemapStyle,
   listBasemaps,
   getBasemap,
-  resolveBasemapStyle,
-  loadBasemapStyle,
-  applyBasemap,
-  createBasemapControl,
+  createBasemapRegistry,
+  basemapRegistry,
+  providerRegistry,
+  basemapGroups,
+  registerPmtilesProtocol,
 } from "vector-tiles-basemaps";
 ```
+
+Primary exported types:
+
+- `BasemapDefinition`
+- `BasemapProvider`
+- `BasemapGroup`
+- `BasemapControlOptions`
+- `BasemapChangeEvent`
+- `BasemapErrorEvent`
+- `BasemapRegistryFilters`
+- `CaptureOverlaysCallback`
+- `RestoreOverlaysCallback`
 
 ## BasemapDefinition
 
 ```ts
 type BasemapDefinition = {
-  id: string
-  name: string
-  provider: string
-  styleUrl: string
-  providerUrl: string
-  usagePolicyUrl?: string
-  attributionHtml?: string
-  variant: "light" | "dark" | "relief" | "imagery" | "colorful" | "gray" | "white" | "black"
-  coverage: "world" | "country" | "region"
-  countries?: string[]
-  previewUrl?: string
-  lastVerifiedAt: string
-}
+  id: string;
+  name: string;
+  provider: string;
+  group: string;
+  style: string | StyleSpecification;
+  styleUrl?: string; // deprecated compatibility alias
+  variant: "light" | "dark" | "relief" | "imagery" | "colorful" | "gray" | "white" | "black";
+  coverage: "world" | "country" | "region";
+  sourceType: "vector" | "raster" | "hybrid";
+  attributionHtml?: string;
+  license?: string;
+  previewUrl?: string;
+  rasterFallback?: { tiles: readonly string[]; tileSize?: number };
+  protocols?: readonly "pmtiles"[];
+};
 ```
 
-## Usage
+`style` is the canonical field. It may be a MapLibre style URL or a `StyleSpecification` object. `styleUrl` is kept only as a transition alias.
 
-```js
+## Registry And Filtering
+
+```ts
+const vectorMaps = listBasemaps({ sourceType: "vector" });
+const swissMaps = listBasemaps({ country: "CH" });
+const selected = listBasemaps({
+  ids: ["vectormap.light", "openfreemap.dark", "carto.light.raster"],
+});
+```
+
+Custom registries are first-class:
+
+```ts
+const registry = createBasemapRegistry([
+  {
+    id: "custom.light",
+    name: "Custom Light",
+    provider: "custom",
+    group: "general",
+    style: "https://example.com/style.json",
+    variant: "light",
+    coverage: "world",
+    sourceType: "vector",
+  },
+]);
+
+map.addControl(new BasemapControl({ registry }), "top-right");
+```
+
+## Style Switching
+
+`applyBasemap` loads and validates the target style before calling `map.setStyle`, so a failed fetch does not wipe the current map. The current camera is preserved by default.
+
+```ts
+await applyBasemap(map, "openfreemap.dark", {
+  preserveView: true,
+  repositionIfOutsideCoverage: true,
+  onBasemapError(event) {
+    console.error(event.basemapId, event.error);
+  },
+});
+```
+
+Overlay preservation is opt-in because applications differ in how overlays are owned:
+
+```ts
+await applyBasemap(map, "versatiles.graybeard", {
+  captureOverlays({ map }) {
+    return {
+      sources: map.getStyle().sources,
+      layers: map.getStyle().layers.filter((layer) => layer.id.startsWith("app-")),
+    };
+  },
+  restoreOverlays(snapshot, { map }) {
+    // Re-add application-owned sources and layers after style.load.
+  },
+});
+```
+
+## PMTiles
+
+The package does not install or register PMTiles globally. Register it explicitly when your styles use `pmtiles://` sources:
+
+```ts
 import maplibregl from "maplibre-gl";
 import * as pmtiles from "pmtiles";
-import {
-  applyBasemap,
-  createBasemapControl,
-} from "vector-tiles-basemaps";
+import { registerPmtilesProtocol } from "vector-tiles-basemaps";
 
-const map = new maplibregl.Map({
-  container: "map",
-  style: {
-    version: 8,
-    sources: {},
-    layers: [
-      {
-        id: "background",
-        type: "background",
-        paint: { "background-color": "#f3f4f6" }
-      }
-    ]
-  },
-  center: [8.7241, 47.4988],
-  zoom: 10.8,
-});
+const unregisterPmtiles = registerPmtilesProtocol(maplibregl, pmtiles);
 
-await applyBasemap(map, "vectormap.light", { maplibregl, pmtiles });
-
-map.addControl(
-  createBasemapControl({
-    basemapIds: [
-      "vectormap.light",
-      "openfreemap.dark",
-      "versatiles.graybeard",
-      "basemapworld.color",
-      "swisstopo.basemap",
-    ],
-    applyOptions: { maplibregl, pmtiles },
-  }),
-  "bottom-left",
-);
+// Later, during app teardown if desired:
+unregisterPmtiles();
 ```
 
-## Filtering
+## Styling
 
-```js
-const swissMaps = listBasemaps({ country: "CH" });
-const darkMaps = listBasemaps({ variant: "dark" });
-const selectedMaps = listBasemaps({
-  ids: ["vectormap.light", "openfreemap.fiord", "basemapworld.color"],
-});
+Import the CSS bundle once:
+
+```ts
+import "vector-tiles-basemaps/style.css";
 ```
 
-## Providers
+The root control element uses:
 
-- `vectormap.light`
-- `openfreemap.liberty`
-- `openfreemap.bright`
-- `openfreemap.positron`
-- `openfreemap.dark`
-- `openfreemap.fiord`
-- `versatiles.colorful`
-- `versatiles.eclipse`
-- `versatiles.graybeard`
-- `versatiles.neutrino`
-- `versatiles.shadow`
-- `basemapworld.color`
-- `swisstopo.basemap`
-- `swisstopo.light`
-- `swisstopo.imagery`
+```html
+<div class="maplibregl-ctrl maplibregl-ctrl-group vtb-basemap-control">
+```
 
-## Preview Images
+Override CSS custom properties on `.vtb-basemap-control` to align with your app theme.
 
-Preview image generation is documented separately in [`preview-generator/README.md`](C:/Users/fabia/GitHub/vector-tiles-basemaps/preview-generator/README.md).
+## Accessibility
+
+The control uses a real button for expand/collapse, a `radiogroup` for choices, `aria-expanded`, `aria-controls`, `aria-checked`, visible focus states, `Escape`, arrow-key roving focus, `Home`, and `End`.
+
+## Included Providers
+
+The default registry includes vector styles from vectormap, OpenFreeMap, VersaTiles, basemap.world, and swisstopo, plus a CARTO raster basemap for comparison and fallback workflows. Check each provider's usage policy and attribution terms before production use.
 
 ## Demo
 
-The static demo lives in [`index.html`](C:/Users/fabia/GitHub/vector-tiles-basemaps/index.html).
+```bash
+npm install
+npm run demo:dev
+```
+
+The demo imports the package API and `vector-tiles-basemaps/style.css` through Vite aliases, matching consumer import paths.
+
+## Development
+
+```bash
+npm ci
+npm run lint
+npm run test
+npm run test:types
+npm run build
+```
+
+Live provider style validation is available but network-dependent:
+
+```bash
+npm run validate:styles
+```
+
+## Release
+
+Changesets are configured for release management:
+
+```bash
+npm run changeset
+npm run build
+npm run release
+```

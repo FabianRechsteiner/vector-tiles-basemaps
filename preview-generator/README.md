@@ -7,6 +7,7 @@ Die Vorschaubilder werden in `preview-generator/generated/` geschrieben und koen
 ## Voraussetzungen
 
 - `npm install`
+- `npm run build`
 - ein lokaler Chromium-basierter Browser
   - Edge oder Chrome werden automatisch gesucht
   - alternativ `PREVIEW_BROWSER_PATH` setzen
@@ -16,6 +17,8 @@ Die Vorschaubilder werden in `preview-generator/generated/` geschrieben und koen
 ```bash
 npm run generate:previews -- --lng=8.7147 --lat=47.4951 --zoom=12
 ```
+
+Das npm-Script fuehrt den Library-Build automatisch vor dem Rendern aus, weil der Renderer die gebaute ESM-Library aus `dist/` verwendet.
 
 ## Wichtige Parameter
 

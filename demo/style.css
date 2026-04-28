@@ -1,0 +1,166 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bg: #eef2f3;
+  --panel: rgba(255, 255, 255, 0.94);
+  --border: rgba(148, 163, 184, 0.36);
+  --text: #111827;
+  --muted: #526071;
+  --accent: #0f766e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.demo-shell {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  height: 100%;
+  min-height: 100vh;
+}
+
+.demo-sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: grid;
+  gap: 18px;
+  grid-template-rows: auto auto 1fr;
+  min-width: 0;
+  padding: 24px;
+  z-index: 1;
+}
+
+.demo-title {
+  display: grid;
+  gap: 8px;
+}
+
+.demo-title h1 {
+  font-size: 1.35rem;
+  line-height: 1.12;
+  margin: 0;
+}
+
+.demo-title p {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.demo-panel {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.demo-panel h2 {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo-actions button {
+  appearance: none;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  min-height: 32px;
+  padding: 6px 9px;
+}
+
+.demo-actions button:hover,
+.demo-actions button:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.demo-meta {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.demo-meta div {
+  display: grid;
+  gap: 2px;
+}
+
+.demo-meta dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.demo-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.demo-code {
+  background: #111827;
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.demo-map-shell {
+  min-width: 0;
+  position: relative;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .demo-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(58vh, 1fr);
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .demo-sidebar {
+    border-bottom: 1px solid var(--border);
+    border-right: 0;
+    padding: 18px;
+  }
+
+  .demo-map-shell,
+  #map {
+    min-height: 58vh;
+  }
+}
