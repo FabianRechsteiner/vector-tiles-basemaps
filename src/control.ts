@@ -623,7 +623,11 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
       const schedule = this.documentRef?.defaultView?.requestAnimationFrame ?? ((callback: FrameRequestCallback) => {
         return globalThis.setTimeout(() => callback(0), 0);
       });
-      schedule(() => this.buttonOrder[this.focusIndex]?.focus());
+      schedule(() => {
+        if (this.isOpen && !this.previewBasemapId) {
+          this.buttonOrder[this.focusIndex]?.focus();
+        }
+      });
     }
   }
 }
