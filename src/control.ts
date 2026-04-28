@@ -92,6 +92,34 @@ function ownerDocumentFor(map: MapLibreMap): Document {
   return map.getContainer().ownerDocument;
 }
 
+function composeAbortSignal(
+  signal: AbortSignal,
+  externalSignal: AbortSignal | undefined,
+): { signal: AbortSignal; cleanup: () => void } {
+  if (!externalSignal) {
+    return { signal, cleanup: () => undefined };
+  }
+
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  const abortFromExternal = () => controller.abort();
+
+  if (signal.aborted || externalSignal.aborted) {
+    controller.abort();
+  } else {
+    signal.addEventListener("abort", abort, { once: true });
+    externalSignal.addEventListener("abort", abortFromExternal, { once: true });
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      signal.removeEventListener("abort", abort);
+      externalSignal.removeEventListener("abort", abortFromExternal);
+    },
+  };
+}
+
 export class BasemapControl<TSnapshot = unknown> implements IControl {
   private readonly options: BasemapControlOptions<TSnapshot>;
   private readonly id = ++nextControlId;
@@ -108,6 +136,7 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
   private focusIndex = 0;
   private isOpen = false;
   private applySequence = 0;
+  private applyAbortController: AbortController | null = null;
   private documentPointerHandler: ((event: PointerEvent) => void) | null = null;
   private documentKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
 
@@ -133,6 +162,7 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
     if (!this.activeBasemapId && this.items.length) {
       this.activeBasemapId = this.items[0]?.id ?? null;
     }
+    this.activeBasemapId = this.normalizeActiveBasemapId(this.activeBasemapId);
 
     this.container = documentRef.createElement("div");
     this.container.className = "maplibregl-ctrl maplibregl-ctrl-group vtb-basemap-control";
@@ -185,6 +215,8 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
   }
 
   onRemove(): void {
+    this.abortPendingApply();
+
     if (this.documentRef && this.documentPointerHandler) {
       this.documentRef.removeEventListener("pointerdown", this.documentPointerHandler);
     }
@@ -210,8 +242,30 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
   }
 
   setActiveBasemap(id: string): void {
-    this.activeBasemapId = id;
+    this.activeBasemapId = this.normalizeActiveBasemapId(id);
+    this.previewBasemapId = null;
     this.render();
+  }
+
+  private abortPendingApply(): void {
+    this.applyAbortController?.abort();
+    this.applyAbortController = null;
+  }
+
+  private hasBasemap(id: string): boolean {
+    return this.items.some((item) => item.id === id);
+  }
+
+  private normalizeActiveBasemapId(id: string | null): string | null {
+    if (!this.items.length) {
+      return id;
+    }
+
+    if (id && this.hasBasemap(id)) {
+      return id;
+    }
+
+    return this.items[0]?.id ?? null;
   }
 
   private render(): void {
@@ -424,9 +478,25 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
       return;
     }
 
+    if (!this.hasBasemap(id)) {
+      this.activeBasemapId = this.normalizeActiveBasemapId(this.activeBasemapId);
+      this.previewBasemapId = null;
+      this.render();
+      return;
+    }
+
     const { commit = false, restoreFocus = false } = options;
+    this.abortPendingApply();
+    const applyAbortController = new AbortController();
+    this.applyAbortController = applyAbortController;
+    const abortSignal = composeAbortSignal(
+      applyAbortController.signal,
+      this.options.applyOptions?.signal,
+    );
     const sequence = ++this.applySequence;
-    const previousBasemapId = this.previewBasemapId ?? this.activeBasemapId ?? undefined;
+    const previousBasemapId = commit
+      ? this.activeBasemapId ?? undefined
+      : this.previewBasemapId ?? this.activeBasemapId ?? undefined;
     const previousBasemap = previousBasemapId
       ? getBasemap(previousBasemapId, this.options.registry)
       : null;
@@ -444,6 +514,7 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
         ...this.options.applyOptions,
         registry: this.options.registry ?? this.options.applyOptions?.registry,
         previousBasemapId,
+        signal: abortSignal.signal,
         onBasemapError,
       });
 
@@ -477,8 +548,15 @@ export class BasemapControl<TSnapshot = unknown> implements IControl {
           this.buttons.get(id)?.focus();
         });
       }
+    } catch {
+      // Errors are surfaced through onBasemapError by applyBasemap; aborted previews are intentionally silent.
     } finally {
-      if (commit) {
+      abortSignal.cleanup();
+      if (this.applyAbortController === applyAbortController) {
+        this.applyAbortController = null;
+      }
+
+      if (commit && sequence === this.applySequence) {
         this.setButtonsDisabled(false);
       }
     }

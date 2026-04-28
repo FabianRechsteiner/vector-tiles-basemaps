@@ -52,10 +52,21 @@ describe("basemap registry", () => {
     expect(first?.rasterFallback?.tiles).not.toBe(second?.rasterFallback?.tiles);
   });
 
-  it("prefers local preview assets before remote preview URLs", () => {
+  it("does not expose mutable registry internals", () => {
+    const first = getBasemap("carto.light.raster");
+    const style = first?.style as { layers?: Array<{ id: string }> };
+    style.layers?.push({ id: "mutated" });
+
+    const second = getBasemap("carto.light.raster");
+    const secondStyle = second?.style as { layers?: Array<{ id: string }> };
+
+    expect(secondStyle.layers?.map((layer) => layer.id)).not.toContain("mutated");
+  });
+
+  it("prefers distributable preview assets before remote preview URLs", () => {
     const previews = getBasemapPreviewCandidates("vectormap.light");
 
-    expect(previews[0]).toMatch(/preview-generator\/generated\/vectormap\.light\.png$/);
+    expect(previews[0]).toMatch(/dist\/previews\/vectormap\.light\.png$/);
     expect(previews[1]).toMatch(/^https:\/\/raw\.githubusercontent\.com\//);
   });
 });

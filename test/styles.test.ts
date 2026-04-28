@@ -127,4 +127,42 @@ describe("applyBasemap", () => {
       expect.objectContaining({ basemap: expect.objectContaining({ id: "fixture.vector" }) }),
     );
   });
+
+  it("aborts before restoring overlays", async () => {
+    const map = new MockMap();
+    const abortController = new AbortController();
+    const restoreOverlays = vi.fn();
+
+    const promise = applyBasemap(map.asMap(), "fixture.vector", {
+      registry: fixtureRegistry,
+      restoreOverlays,
+      signal: abortController.signal,
+    });
+
+    for (let index = 0; index < 5 && map.styleCalls.length === 0; index += 1) {
+      await Promise.resolve();
+    }
+
+    abortController.abort();
+
+    await expect(promise).rejects.toThrow(/aborted/);
+    expect(restoreOverlays).not.toHaveBeenCalled();
+  });
+
+  it("does not report aborted basemap loads as basemap errors", async () => {
+    const map = new MockMap();
+    const abortController = new AbortController();
+    const onBasemapError = vi.fn();
+
+    abortController.abort();
+
+    await expect(applyBasemap(map.asMap(), "fixture.vector", {
+      registry: fixtureRegistry,
+      signal: abortController.signal,
+      onBasemapError,
+    })).rejects.toThrow(/aborted/);
+
+    expect(onBasemapError).not.toHaveBeenCalled();
+    expect(map.styleCalls).toHaveLength(0);
+  });
 });

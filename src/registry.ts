@@ -21,12 +21,26 @@ const WINTERTHUR_PREVIEW_VIEW: Readonly<BasemapView> = Object.freeze({
 const GENERATED_PREVIEW_BASE_URL =
   "https://raw.githubusercontent.com/FabianRechsteiner/vector-tiles-basemaps/master/preview-generator/generated";
 
+function deepFreeze<T>(value: T): T {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) {
+    return value;
+  }
+
+  Object.freeze(value);
+
+  for (const child of Object.values(value as Record<string, unknown>)) {
+    deepFreeze(child);
+  }
+
+  return value;
+}
+
 function assetUrl(relativePath: string): string {
   return new URL(relativePath, import.meta.url).href;
 }
 
 function generatedPreviewUrl(id: string): string {
-  return assetUrl(`../preview-generator/generated/${id}.png`);
+  return assetUrl(`../dist/previews/${id}.png`);
 }
 
 const previewUrls: Record<string, string> = Object.fromEntries(
@@ -72,7 +86,7 @@ const cartoRasterStyle: StyleSpecification = {
   ],
 };
 
-export const providerRegistry = Object.freeze([
+export const providerRegistry = deepFreeze([
   {
     id: "vectormap",
     name: "vectormap",
@@ -120,7 +134,7 @@ export const providerRegistry = Object.freeze([
   },
 ] satisfies readonly BasemapProvider[]);
 
-export const basemapGroups = Object.freeze([
+export const basemapGroups = deepFreeze([
   {
     id: "general",
     label: "General",
@@ -148,7 +162,7 @@ export const basemapGroups = Object.freeze([
   },
 ] satisfies readonly BasemapGroup[]);
 
-const defaultDefinitions = Object.freeze([
+const defaultDefinitions = deepFreeze([
   {
     id: "vectormap.light",
     name: "Vectormap Light",
@@ -496,17 +510,23 @@ export function createBasemapRegistry(
     groups?: readonly BasemapGroup[];
   } = {},
 ): BasemapRegistry {
-  const immutableDefinitions = Object.freeze(definitions.map((definition) => Object.freeze(cloneDefinition(definition))));
-  const immutableProviders = Object.freeze([...(options.providers ?? providerRegistry)]);
-  const immutableGroups = Object.freeze([...(options.groups ?? basemapGroups)]);
+  const immutableDefinitions = deepFreeze(definitions.map((definition) => deepFreeze(cloneDefinition(definition))));
+  const immutableProviders = deepFreeze((options.providers ?? providerRegistry).map((provider) => deepFreeze({ ...provider })));
+  const immutableGroups = deepFreeze((options.groups ?? basemapGroups).map((group) => deepFreeze({ ...group })));
   const byId = new Map(immutableDefinitions.map((definition) => [definition.id, definition]));
   const providersById = new Map(immutableProviders.map((provider) => [provider.id, provider]));
   const groupsById = new Map(immutableGroups.map((group) => [group.id, group]));
 
   return Object.freeze({
-    definitions: immutableDefinitions,
-    providers: immutableProviders,
-    groups: immutableGroups,
+    get definitions() {
+      return immutableDefinitions.map((definition) => cloneDefinition(definition));
+    },
+    get providers() {
+      return immutableProviders.map((provider) => ({ ...provider }));
+    },
+    get groups() {
+      return immutableGroups.map((group) => ({ ...group }));
+    },
     get(id: string) {
       const definition = byId.get(id);
       return definition ? cloneDefinition(definition) : null;

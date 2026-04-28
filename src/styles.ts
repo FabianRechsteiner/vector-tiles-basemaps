@@ -52,6 +52,18 @@ function normalizeTiles(tiles: unknown, baseUrl: string | undefined): unknown {
   return tiles.map((tileUrl) => (typeof tileUrl === "string" ? absolutizeUrl(tileUrl, baseUrl) : tileUrl));
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (!signal?.aborted) {
+    return;
+  }
+
+  throw new DOMException("The basemap operation was aborted.", "AbortError");
+}
+
 export function validateStyleDocument(styleDocument: unknown, context = "style"): StyleSpecification {
   if (!styleDocument || typeof styleDocument !== "object" || Array.isArray(styleDocument)) {
     throw new Error(`${context} did not resolve to a JSON object.`);
@@ -116,11 +128,14 @@ function normalizeStyleDocument(styleDocument: StyleSpecification, baseUrl: stri
 async function loadJsonDocument(url: string, options: BasemapLoadOptions): Promise<unknown> {
   const fetcher = options.fetch ?? globalThis.fetch;
 
+  throwIfAborted(options.signal);
+
   if (!fetcher) {
     throw new Error("No fetch implementation is available to load MapLibre style URLs.");
   }
 
   const response = await fetcher(url, { signal: options.signal });
+  throwIfAborted(options.signal);
 
   if (!response.ok) {
     throw new Error(`Failed to load style document from ${url}: ${response.status} ${response.statusText}`);
@@ -197,14 +212,18 @@ export function resolveBasemapStyle(id: string, options: BasemapLoadOptions = {}
 }
 
 export async function loadBasemapStyle(id: string, options: BasemapLoadOptions = {}): Promise<StyleSpecification> {
+  throwIfAborted(options.signal);
+
   const { style, url } = resolveBasemapStyle(id, options);
 
   if (typeof style === "string") {
     const styleDocument = await loadJsonDocument(style, options);
+    throwIfAborted(options.signal);
     const validated = validateStyleDocument(styleDocument, style);
     return pruneKnownBrokenLayers(id, normalizeStyleDocument(validated, style));
   }
 
+  throwIfAborted(options.signal);
   const validated = validateStyleDocument(style, id);
   return pruneKnownBrokenLayers(id, normalizeStyleDocument(validated, url));
 }
@@ -229,9 +248,41 @@ function pointInBounds(center: { lng: number; lat: number }, bounds: readonly [n
   return center.lng >= west && center.lng <= east && center.lat >= south && center.lat <= north;
 }
 
-function waitForStyleLoad(map: MapLibreMap): Promise<void> {
-  return new Promise((resolve) => {
-    map.once("style.load", () => resolve());
+function waitForStyleLoad(map: MapLibreMap, signal: AbortSignal | undefined): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const eventedMap = map as MapLibreMap & {
+      off?: (eventName: string, listener: (...args: unknown[]) => void) => MapLibreMap;
+    };
+
+    const cleanup = () => {
+      signal?.removeEventListener("abort", handleAbort);
+      eventedMap.off?.("style.load", handleStyleLoad);
+      eventedMap.off?.("error", handleError);
+    };
+    const handleStyleLoad = () => {
+      cleanup();
+      resolve();
+    };
+    const handleError = (event: unknown) => {
+      cleanup();
+      const error = event && typeof event === "object" && "error" in event
+        ? (event as { error: unknown }).error
+        : event;
+      reject(error instanceof Error ? error : new Error("MapLibre emitted an error while loading the basemap style."));
+    };
+    const handleAbort = () => {
+      cleanup();
+      reject(new DOMException("The basemap operation was aborted.", "AbortError"));
+    };
+
+    if (signal?.aborted) {
+      handleAbort();
+      return;
+    }
+
+    map.once("style.load", handleStyleLoad);
+    map.once("error", handleError);
+    signal?.addEventListener("abort", handleAbort, { once: true });
   });
 }
 
@@ -246,11 +297,14 @@ export async function applyBasemap<TSnapshot = unknown>(
     : null;
 
   try {
+    throwIfAborted(options.signal);
+
     if (!basemap) {
       throw new Error(`Unknown basemap id "${id}".`);
     }
 
     const styleDocument = await loadBasemapStyle(id, options);
+    throwIfAborted(options.signal);
     const preserveView = options.preserveView !== false;
     const currentView = preserveView ? snapshotView(map) : null;
     const context = {
@@ -262,6 +316,7 @@ export async function applyBasemap<TSnapshot = unknown>(
       ? await options.captureOverlays(context)
       : undefined;
 
+    throwIfAborted(options.signal);
     map.setStyle(styleDocument, { diff: options.diff ?? false });
 
     if (currentView) {
@@ -282,7 +337,8 @@ export async function applyBasemap<TSnapshot = unknown>(
     }
 
     if (options.restoreOverlays) {
-      await waitForStyleLoad(map);
+      await waitForStyleLoad(map, options.signal);
+      throwIfAborted(options.signal);
       await options.restoreOverlays(overlaySnapshot as TSnapshot, context);
     }
 
@@ -292,12 +348,14 @@ export async function applyBasemap<TSnapshot = unknown>(
       style: styleDocument,
     };
   } catch (error) {
-    options.onBasemapError?.({
-      map,
-      basemap: basemap ?? undefined,
-      basemapId: id,
-      error,
-    });
+    if (!isAbortError(error)) {
+      options.onBasemapError?.({
+        map,
+        basemap: basemap ?? undefined,
+        basemapId: id,
+        error,
+      });
+    }
     throw error;
   }
 }

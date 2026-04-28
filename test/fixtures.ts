@@ -77,7 +77,7 @@ export const fixtureBasemaps: BasemapDefinition[] = [
   },
 ];
 
-type Listener = () => void;
+type Listener = (...args: unknown[]) => void;
 
 export class MockMap {
   readonly container = document.createElement("div");
@@ -124,10 +124,18 @@ export class MockMap {
     return this;
   }
 
-  emit(eventName: string): void {
+  off(eventName: string, listener: Listener): this {
+    this.listeners.set(
+      eventName,
+      (this.listeners.get(eventName) ?? []).filter((candidate) => candidate !== listener),
+    );
+    return this;
+  }
+
+  emit(eventName: string, ...args: unknown[]): void {
     const listeners = this.listeners.get(eventName) ?? [];
     this.listeners.delete(eventName);
-    listeners.forEach((listener) => listener());
+    listeners.forEach((listener) => listener(...args));
   }
 
   asMap(): MapLibreMap {
